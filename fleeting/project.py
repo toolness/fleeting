@@ -4,10 +4,11 @@ import re
 from .utils import path
 
 class Project(object):
-    def __init__(self, name, script_path):
+    def __init__(self, name):
+        pmap = get_project_map()
         self.name = name
-        self.script_path = script_path
-        self.script_content = open(script_path, 'r').read()
+        self.script_path = pmap[name]
+        self.script_content = open(self.script_path, 'r').read()
         self.meta = {}
 
         for line in self.script_content.splitlines():

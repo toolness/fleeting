@@ -8,7 +8,6 @@ class ProjectTests(unittest.TestCase):
         self.assertTrue('openbadges' in pmap)
 
     def test_project_reads_meta_info(self):
-        proj = project.Project('openbadges',
-                               project.path('projects/openbadges.sh'))
+        proj = project.Project('openbadges')
         self.assertEqual(proj.meta['name'], 'Open Badges Backpack')
         self.assertEqual(proj.meta['repo'], 'mozilla/openbadges')

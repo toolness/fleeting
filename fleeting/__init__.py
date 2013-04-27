@@ -9,10 +9,9 @@ project_bp = Blueprint('project', __name__, url_prefix='/<project>')
 @project_bp.url_value_preprocessor
 def pull_project(endpoint, values):
     pname = values.pop('project', None)
-    pmap = project.get_project_map()
-    if pname not in pmap:
+    if pname not in project.get_project_map():
         abort(404)
-    g.project = project.Project(pname, pmap[pname]) 
+    g.project = project.Project(pname)
 
 @project_bp.route('/')
 def project_index():
