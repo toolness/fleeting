@@ -1,7 +1,13 @@
-<h1>Projects</h1>
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.css">
+<title>Fleeting: Projects</title>
+<div class="container">
+  <h1>Projects</h1>
 
-<ul>
-{% for project in projects %}
-  <li><a href="/{{ project.id }}/">{{ project.meta.name }}</a></li>
-{% endfor %}
-</ul>
+  <ul>
+  {% for project in projects %}
+    <li><a href="/{{ project.id }}/">{{ project.meta.name }}</a></li>
+  {% endfor %}
+  </ul>
+</div>
