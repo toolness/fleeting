@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, abort, g
+from flask import Flask, Blueprint, abort, g, render_template
 
 from . import project
 
@@ -27,5 +27,5 @@ def update():
 
 @app.route('/')
 def index():
-    # TODO: Link to project pages.
-    return ' '.join(project.get_project_map().keys())
+    projects = project.get_project_map().keys()
+    return render_template('index.html', projects=projects)
