@@ -5,8 +5,9 @@ from .project import Project, get_project_map
 app = Flask(__name__)
 
 @app.after_request
-def add_csp_header(response):
+def add_csp_headers(response):
     policy = "default-src 'self'"
+    response.headers['Content-Security-Policy'] = policy
     response.headers['X-Content-Security-Policy'] = policy
     return response
 
