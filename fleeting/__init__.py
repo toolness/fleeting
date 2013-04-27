@@ -4,6 +4,12 @@ from .project import Project, get_project_map
 
 app = Flask(__name__)
 
+@app.after_request
+def add_csp_header(response):
+    policy = "default-src 'self'"
+    response.headers['X-Content-Security-Policy'] = policy
+    return response
+
 project_bp = Blueprint('project', __name__, url_prefix='/<project>')
 
 @project_bp.url_value_preprocessor

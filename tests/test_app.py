@@ -6,6 +6,13 @@ class AppTests(unittest.TestCase):
     def setUp(self):
         self.app = fleeting.app.test_client()
 
+    def test_csp_header_exists(self):
+        header = 'X-Content-Security-Policy'
+        prefix = "default-src 'self'"
+        for path in ['/', '/aewg', '/openbadges/', '/lol/']:
+            rv = self.app.get(path)
+            self.assertTrue(rv.headers[header].startswith(prefix))
+
     def test_index_works(self):
         rv = self.app.get('/')
         self.assertEqual(rv.status, '200 OK')
