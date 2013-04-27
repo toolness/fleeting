@@ -1,5 +1,7 @@
 <h1>Projects</h1>
 
+<ul>
 {% for project in projects %}
-  <p>{{ project }}</p>
+  <li><a href="/{{ project.id }}/">{{ project.meta.name }}</a></li>
 {% endfor %}
+</ul>
