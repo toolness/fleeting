@@ -55,5 +55,5 @@ def index():
     # TODO: Link to project pages.
     return ' '.join(get_project_map().keys())
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     app.run(debug=True)
