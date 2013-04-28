@@ -9,8 +9,8 @@ import fleeting.csrf
 fleeting.app.config.update(
     DEBUG=True,
     TESTING=True,
-    SECRET_KEY = 'testing',
-    SERVER_NAME = 'foo.org'
+    SECRET_KEY='testing',
+    SERVER_NAME='foo.org'
 )
 
 fleeting.csrf.uuid4 = lambda: 'csrf!'
