@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
-<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.css">
-<title>Fleeting: Projects</title>
-<div class="container">
+{% extends "layout.html" %}
+{% block title %}Fleeting - Projects{% endblock %}
+{% block content %}
   <h1>Projects</h1>
-
   <ul>
   {% for project in projects %}
     <li><a href="/{{ project.id }}/">{{ project.meta.name }}</a></li>
   {% endfor %}
   </ul>
-</div>
+{% endblock %}

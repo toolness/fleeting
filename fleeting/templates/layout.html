@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="csrf" content="{{ csrf_token() }}">
+<meta name="email" content="{{ email() }}">
+<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.css">
+<title>{% block title %}Fleeting{% endblock %}</title>
+<div class="navbar navbar-static-top navbar-inverse">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="/">Fleeting</a>
+      {% if email() %}
+      <ul class="nav pull-right">
+        <li class="dropdown">
+          <a class="dropdown-toggle"
+             data-toggle="dropdown" href="#">{{ email() }}
+             <b class="caret"></b>
+          </a>
+          <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+            <li><a class="js-logout" href="#">Logout</a></li>
+          </ul>
+        </li>
+      </ul>
+      {% else %}
+      <button class="btn btn-primary pull-right js-login">Login</button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+<script src="/static/vendor/jquery.js"></script>
+<script src="/static/vendor/bootstrap/js/bootstrap.js"></script>
+<script src="/static/login.js"></script>
+<script src="https://login.persona.org/include.js" async></script>

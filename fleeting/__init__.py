@@ -32,7 +32,7 @@ def pull_project(endpoint, values):
 
 @project_bp.route('/')
 def project_index():
-    return 'TODO: implement this'
+    return render_template('project.html', project=g.project)
 
 app.register_blueprint(project_bp)
 
