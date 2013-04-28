@@ -1,10 +1,55 @@
 import unittest
 
+import browserid
+from flask import session
+
 import fleeting
+import fleeting.csrf
+
+fleeting.app.config.update(
+    DEBUG=True,
+    TESTING=True,
+    SECRET_KEY = 'testing',
+    SERVER_NAME = 'foo.org'
+)
+
+fleeting.csrf.uuid4 = lambda: 'csrf!'
+
+def fake_verify(assertion, origin):
+    if origin != 'http://foo.org':
+        raise Exception('bad origin: %s' % origin)
+    return {'email': assertion}
+
+browserid.verify = fake_verify
 
 class AppTests(unittest.TestCase):
     def setUp(self):
         self.app = fleeting.app.test_client()
+ 
+    def test_csrf_works(self):
+        rv = self.app.post('/logout')
+        self.assertEqual(rv.status, '400 BAD REQUEST')
+
+    def test_login_and_logout_work(self):
+        with fleeting.app.test_client() as c:
+            # Set the CSRF token.
+            c.get('/')
+            self.assertTrue('email' not in session)
+
+            # Login.
+            rv = c.post('/login', data=dict(
+                assertion='foo@bar.org',
+                _csrf_token='csrf!'
+            ))
+            self.assertEqual(rv.status, '200 OK')
+            self.assertEqual(rv.data, 'foo@bar.org')
+            self.assertEqual(session['email'], 'foo@bar.org')
+
+            # Logout.
+            rv = c.post('/logout', data=dict(_csrf_token='csrf!'))
+            self.assertEqual(rv.status, '200 OK')
+            self.assertEqual(rv.data, 'logged out')
+            self.assertTrue('email' not in session)
 
     def test_csp_headers_exist(self):
         headers = ['X-Content-Security-Policy', 'Content-Security-Policy']

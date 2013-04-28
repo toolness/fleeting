@@ -1,15 +1,22 @@
-from flask import Flask, Blueprint, abort, g, render_template
-from flaskext.csrf import csrf, csrf_exempt
+import os
+
+import browserid
+from flask import Flask, Blueprint, abort, g, render_template, request, \
+                  session
+from .csrf import enable_csrf, csrf_exempt
 
 from .project import Project, get_project_map
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY')
 
-csrf(app)
+enable_csrf(app)
+
+app.jinja_env.globals['email'] = lambda: session.get('email', '')
 
 @app.after_request
 def add_csp_headers(response):
-    policy = "default-src 'self'"
+    policy = "default-src 'self' https://login.persona.org"
     response.headers['Content-Security-Policy'] = policy
     response.headers['X-Content-Security-Policy'] = policy
     return response
@@ -28,6 +35,19 @@ def project_index():
     return 'TODO: implement this'
 
 app.register_blueprint(project_bp)
+
+@app.route('/login', methods=['POST'])
+def login():
+    origin = "%(PREFERRED_URL_SCHEME)s://%(SERVER_NAME)s" % (app.config)
+    data = browserid.verify(request.form['assertion'], origin)
+    session['email'] = data['email']
+    return data['email']
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    if 'email' in session:
+        del session['email']
+    return 'logged out'
 
 @csrf_exempt
 @app.route('/update', methods=['POST'])

@@ -1,3 +1,4 @@
+import os
 import argparse
 import subprocess
 
@@ -6,6 +7,10 @@ from fleeting import app
 def cmd_runserver(args):
     "Run development server."
 
+    app.config.update(
+        SECRET_KEY='development',
+        SERVER_NAME='localhost:5000'
+    )
     app.run(debug=True)
 
 def cmd_test(args):
