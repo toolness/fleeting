@@ -1,8 +1,11 @@
 from flask import Flask, Blueprint, abort, g, render_template
+from flaskext.csrf import csrf, csrf_exempt
 
 from .project import Project, get_project_map
 
 app = Flask(__name__)
+
+csrf(app)
 
 @app.after_request
 def add_csp_headers(response):
@@ -26,6 +29,7 @@ def project_index():
 
 app.register_blueprint(project_bp)
 
+@csrf_exempt
 @app.route('/update', methods=['POST'])
 def update():
     # TODO: Implement this.
