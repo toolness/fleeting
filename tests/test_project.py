@@ -38,10 +38,3 @@ class ProjectTests(unittest.TestCase):
             'git_branch_url': 'https://github.com/lol/openbadges/tree/cat',
             'launch_time': '2013-04-29T11:53:42.000Z'
         }])
-
-    @mock.patch('fleeting.project.Project')
-    def test_cmdline(self, Project):
-        Project.return_value.get_instances.return_value = ['hi']
-        output = StringIO()
-        project.cmdline(['list'], output)
-        self.assertEqual(output.getvalue(), "'hi'\n")
