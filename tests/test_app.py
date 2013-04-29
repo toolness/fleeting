@@ -2,6 +2,7 @@ import unittest
 
 import browserid
 from flask import session
+import mock
 
 import fleeting
 import fleeting.csrf
@@ -54,7 +55,7 @@ class AppTests(unittest.TestCase):
     def test_csp_headers_exist(self):
         headers = ['X-Content-Security-Policy', 'Content-Security-Policy']
         prefix = "default-src 'self'"
-        for path in ['/', '/aewg', '/openbadges/', '/lol/']:
+        for path in ['/', '/aewg', '/lol/']:
             rv = self.app.get(path)
             for header in headers:
                 self.assertTrue(rv.headers[header].startswith(prefix))
@@ -69,8 +70,19 @@ class AppTests(unittest.TestCase):
         self.assertEqual(rv.status, '200 OK')
         self.assertEqual('update complete', rv.data)
 
-    def test_project_index_works(self):
+    @mock.patch('fleeting.Project')
+    @mock.patch('fleeting.Thread')
+    def test_project_index_works(self, Thread, Project):
+        Project.return_value.get_instances.return_value = [{
+            'state': 'running',
+            'slug': 'meh'
+        }]
         rv = self.app.get('/openbadges/')
+        Thread.assert_called_once_with(
+            target=Project.return_value.get_instance_status,
+            kwargs={'slug': 'meh'}
+        )
+        Thread.return_value.run.assert_called_once_with()
         self.assertEqual(rv.status, '200 OK')
 
     def test_invalid_project_index_raises_404(self):

@@ -2,6 +2,7 @@
 <meta charset="utf-8">
 <meta name="csrf" content="{{ csrf_token() }}">
 <meta name="email" content="{{ email() }}">
+{% block head %}{% endblock %}
 <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
 <title>{% block title %}Fleeting{% endblock %}</title>
 <div class="navbar navbar-static-top navbar-inverse">
@@ -27,6 +28,16 @@
   </div>
 </div>
 <div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <br>
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+          {{ message|safe }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
   {% block content %}{% endblock %}
 </div>
 <script src="/static/vendor/jquery.min.js"></script>

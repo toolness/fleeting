@@ -1,8 +1,10 @@
 import os
+import time
+from threading import Thread
 
 import browserid
 from flask import Flask, Blueprint, abort, g, render_template, request, \
-                  session
+                  session, flash, redirect, escape
 from .csrf import enable_csrf, csrf_exempt
 
 from .project import Project, get_project_map
@@ -30,9 +32,56 @@ def pull_project(endpoint, values):
         abort(404)
     g.project = Project(pname)
 
+@project_bp.route('/create', methods=['POST'])
+def create_instance():
+    if 'email' not in session:
+        abort(401)
+    # TODO: Verify user/branch match a regexp, at least.
+    user = request.form['user']
+    branch = request.form['branch']
+    slug = "%s.%s-%s" % (user, branch, str(int(time.time())))
+    app.logger.info('attempting to create instance %s/%s on behalf of '
+                    '%s.' % (g.project.id, slug, session['email']))
+    result = g.project.create_instance(
+        slug=slug,
+        git_user=user,
+        git_branch=branch,
+        key_name=os.environ['AWS_KEY_NAME'],
+        notify_topic=os.environ.get('AWS_NOTIFY_TOPIC'),
+        security_groups=[os.environ['AWS_SECURITY_GROUP']]
+    )
+    if result == 'INVALID_GIT_INFO':
+        flash('The git user and/or branch is invalid.', 'error')
+    elif result == 'DONE':
+        flash('The instance <strong>%s</strong> was created, and will '
+              'appear shortly.' % escape(slug))
+    else:
+        flash('An unknown error occurred. Sorry!', 'error')
+    return redirect('/%s/' % g.project.id)
+
+@project_bp.route('/destroy', methods=['POST'])
+def destroy_instance():
+    if 'email' not in session:
+        abort(401)
+    # TODO: Verify slug matches a regexp, at least.
+    slug = request.form['slug']
+    app.logger.info('attempting to destroy instance %s/%s on behalf of'
+                    '%s.' % (g.project.id, slug, session['email']))
+    result = g.project.destroy_instance(slug)
+    flash('The instance <strong>%s</strong> has been scheduled for '
+          'destruction, and will be removed shortly.' % escape(slug))
+    return redirect('/%s/' % g.project.id)
+
 @project_bp.route('/')
 def project_index():
-    return render_template('project.html', project=g.project)
+    instances = g.project.get_instances()
+    for inst in instances:
+        if inst['state'] == 'running' and 'url' not in inst:
+            Thread(target=g.project.get_instance_status,
+                   kwargs={'slug': inst['slug']}).run()
+    return render_template('project.html',
+                           project=g.project,
+                           instances=instances)
 
 app.register_blueprint(project_bp)
 

@@ -4,7 +4,7 @@
 # fleeting-meta:repo          = mozilla/openbadges
 # fleeting-meta:image-id      = ami-2bb7d442
 # fleeting-meta:instance-type = t1.micro
-# fleeting-meta:key-name      = fleeting-key
+# fleeting-meta:ready-url     = http://localhost:8888/
 
 export DEBIAN_FRONTEND=noninteractive
 export PUBLIC_HOSTNAME=`ec2metadata --public-hostname`
@@ -17,7 +17,8 @@ add-apt-repository -y ppa:chris-lea/node.js
 apt-get -q -y update
 apt-get -q -y install nodejs git mysql-server
 
-git clone --recursive -b development git://github.com/toolness/openbadges.git
+git clone --recursive -b {{GIT_BRANCH}} \
+  git://github.com/{{GIT_USER}}/openbadges.git
 
 if [ -a /home/ubuntu/node_modules ]
   then mv /home/ubuntu/node_modules openbadges/

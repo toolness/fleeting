@@ -1,5 +1,56 @@
 {% extends "layout.html" %}
+{% block head %}
+<meta http-equiv="refresh" content="30">
+{% endblock %}
 {% block title %}Fleeting - {{ project.meta.name }} Instances{% endblock %}
 {% block content %}
   <h1>{{ project.meta.name }} Instances</h1>
+  {% if email() %}
+  <div class="well">
+    <h3>Deploy An Instance</h3>
+    <p>Fleeting instances will only exist for 24 hours, after which they will be destroyed.</p>
+    <form method="POST" action="create" class="form-inline">
+      <input type="text" name="user" class="input-small" placeholder="Github User" required>
+      <input type="text" name="branch" class="input-small" placeholder="Branch" required>
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn">Deploy</button>
+    </form>
+  </div>
+  {% endif %}
+  {% if instances %}
+    <table class="table">
+      <tr>
+        <th>Name</th>
+        <th>User</th>
+        <th>Branch</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+      {% for inst in instances %}
+      <tr {% if not inst.url %}class="muted"{% endif %}>
+        <td>
+          {% if inst.url %}
+          <a href="{{ inst.url }}">{{ inst.slug }}</a>
+          {% else %}
+          {{ inst.slug }}
+          {% endif %}
+        </td>
+        <td>{{ inst.git_user }}</td>
+        <td><a href="{{ inst.git_branch_url }}">{{ inst.git_branch }}</a></td>
+        <td>{{ inst.state }}</td>
+        <td>
+          {% if inst.state == 'running' and email() %}
+          <form method="POST" action="destroy">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="slug" value="{{ inst.slug }}">
+            <button type="submit" class="btn btn-mini"><i class="icon-trash"></i> Destroy</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>No instances are currently running.</p>
+  {% endif %}
 {% endblock %}
