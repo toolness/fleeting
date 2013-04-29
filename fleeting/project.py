@@ -177,7 +177,8 @@ class Project(object):
                         security_groups, notify_topic=None,
                         lifetime=DEFAULT_LIFETIME):
         github_url = self._get_github_url(git_user, git_branch)
-        http = httplib2.Http(timeout=3)
+        http = httplib2.Http(timeout=3,
+                             disable_ssl_certificate_validation=True)
         res, content = http.request(github_url, method='HEAD')
         if res.status == 404:
             return 'INVALID_GIT_INFO'
