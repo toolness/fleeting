@@ -71,7 +71,7 @@ def create_instance():
 def destroy_instance():
     # TODO: Verify slug matches a regexp, at least.
     slug = request.form['slug']
-    app.logger.info('attempting to destroy instance %s/%s on behalf of'
+    app.logger.info('attempting to destroy instance %s/%s on behalf of '
                     '%s.' % (g.project.id, slug, session['email']))
     g.project.destroy_instance(slug)
     flash('The instance <strong>%s</strong> has been scheduled for '

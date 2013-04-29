@@ -35,6 +35,10 @@ class AppTests(unittest.TestCase):
     def setUp(self):
         self.app = fleeting.app.test_client()
  
+    def login(self, email):
+        self.app.get('/csrf')
+        self.app.post('/login', data=postdata(assertion=email))
+
     def test_csrf_works(self):
         rv = self.app.post('/logout')
         self.assertEqual(rv.status, '400 BAD REQUEST')
@@ -79,6 +83,59 @@ class AppTests(unittest.TestCase):
         self.app.get('/csrf') # Set CSRF token.
         rv = self.app.post('/openbadges/destroy', data=postdata())
         self.assertEqual(rv.status, '401 UNAUTHORIZED')
+
+    @mock.patch('fleeting.Project')
+    @mock.patch('fleeting.flash')
+    def test_project_destroy_instance_works(self, flash, Project):
+        Project.return_value.id = 'openbadges'
+        self.login('meh@goo.org')
+        rv = self.app.post('/openbadges/destroy', data=postdata(slug='bu'))
+        self.assertEqual(rv.status, '302 FOUND')
+        self.assertEqual(rv.headers['location'], 'http://foo.org/openbadges/')
+        Project.return_value.destroy_instance.assert_called_once_with('bu')
+        self.assertTrue('<strong>bu</strong>' in flash.call_args[0][0])
+
+    @mock.patch('fleeting.Project')
+    @mock.patch('fleeting.flash')
+    @mock.patch('time.time', lambda: 12.3)
+    @mock.patch('os.environ', dict(
+        AWS_KEY_NAME='keyname',
+        AWS_SECURITY_GROUP='secgroup'
+    ))
+    def flash_from_project_create_instance(self, rv, flash, Project):
+        Project.return_value.id = 'openbadges'
+        Project.return_value.create_instance.return_value = rv
+        self.login('meh@goo.org')
+        rv = self.app.post('/openbadges/create', data=postdata(
+            user='uzer',
+            branch='branchu'
+        ))
+        Project.return_value.create_instance.assert_called_once_with(
+            key_name='keyname',
+            git_branch=u'branchu',
+            git_user=u'uzer',
+            notify_topic=None,
+            slug=u'uzer.branchu-12',
+            security_groups=['secgroup']
+        )
+        self.assertEqual(rv.status, '302 FOUND')
+        self.assertEqual(rv.headers['location'], 'http://foo.org/openbadges/')
+        return flash.call_args
+
+    def test_project_create_instance_reports_success(self):
+        args, _ = self.flash_from_project_create_instance('DONE')
+        self.assertTrue('<strong>uzer.branchu-12</strong>' in args[0])
+        self.assertEqual(args[1], 'success')
+
+    def test_project_create_instance_reports_invalid_git_info(self):
+        args, _ = self.flash_from_project_create_instance('INVALID_GIT_INFO')
+        self.assertTrue('git' in args[0])
+        self.assertEqual(args[1], 'error')
+
+    def test_project_create_instance_reports_unknown_error(self):
+        args, _ = self.flash_from_project_create_instance('BLARGLE')
+        self.assertTrue('unknown' in args[0])
+        self.assertEqual(args[1], 'error')
 
     @mock.patch('fleeting.Project')
     @mock.patch('fleeting.Thread')
