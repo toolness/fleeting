@@ -61,7 +61,7 @@ def create_instance():
         flash('The git user and/or branch is invalid.', 'error')
     elif result == 'DONE':
         flash('The instance <strong>%s</strong> was created, and will '
-              'appear shortly.' % escape(slug))
+              'appear shortly.' % escape(slug), 'success')
     else:
         flash('An unknown error occurred. Sorry!', 'error')
     return redirect('/%s/' % g.project.id)
@@ -75,7 +75,8 @@ def destroy_instance():
                     '%s.' % (g.project.id, slug, session['email']))
     g.project.destroy_instance(slug)
     flash('The instance <strong>%s</strong> has been scheduled for '
-          'destruction, and will be removed shortly.' % escape(slug))
+          'destruction, and will be removed shortly.' % escape(slug),
+          'info')
     return redirect('/%s/' % g.project.id)
 
 @project_bp.route('/')
