@@ -61,33 +61,32 @@ class Project(object):
         )
 
     def cleanup_instances(self):
-        deleted = 0
-        errors = 0
+        s = {'deleted': 0, 'errors': 0}
         ec2 = connect_ec2()
         conn = connect_ec2_autoscale()
         reservations = ec2.get_all_instances(filters={
             'tag-key': self.tag_name,
             'instance-state-name': ['terminated']
         })
+
+        def try_deleting(obj):
+            try:
+                obj.delete()
+                s['deleted'] += 1
+            except Exception, e:
+                s['errors'] += 1
+
         for res in reservations:
             slug = json.loads(res.instances[0].tags[self.tag_name])['slug']
             ag_name = self._get_autoscale_group_name(slug)
             ag = conn.get_all_groups(names=[ag_name])
             if ag and ag[0].min_size == 0 and not ag[0].instances:
-                try:
-                    ag[0].delete()
-                    deleted += 1
-                except Exception, e:
-                    errors += 1
+                try_deleting(ag[0])
             lc_name = self._get_launch_config_name(slug)
             lc = conn.get_all_launch_configurations(names=[lc_name])
             if lc:
-                try:
-                    lc[0].delete()
-                    deleted += 1
-                except Exception, e:
-                    errors += 1
-        return (deleted, errors)
+                try_deleting(lc[0])
+        return (s['deleted'], s['errors'])
 
     def get_instances(self):
         ec2 = connect_ec2()
