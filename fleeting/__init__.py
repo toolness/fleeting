@@ -1,6 +1,7 @@
 import os
 import time
 from threading import Thread
+from functools import wraps
 
 import browserid
 from flask import Flask, Blueprint, abort, g, render_template, request, \
@@ -15,6 +16,14 @@ app.secret_key = os.environ.get('SECRET_KEY')
 enable_csrf(app)
 
 app.jinja_env.globals['email'] = lambda: session.get('email', '')
+
+def requires_login(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if 'email' not in session:
+            abort(401)
+        return f(*args, **kwargs)
+    return wrapper
 
 @app.after_request
 def add_csp_headers(response):
@@ -33,9 +42,8 @@ def pull_project(endpoint, values):
     g.project = Project(pname)
 
 @project_bp.route('/create', methods=['POST'])
+@requires_login
 def create_instance():
-    if 'email' not in session:
-        abort(401)
     # TODO: Verify user/branch match a regexp, at least.
     user = request.form['user']
     branch = request.form['branch']
@@ -60,14 +68,13 @@ def create_instance():
     return redirect('/%s/' % g.project.id)
 
 @project_bp.route('/destroy', methods=['POST'])
+@requires_login
 def destroy_instance():
-    if 'email' not in session:
-        abort(401)
     # TODO: Verify slug matches a regexp, at least.
     slug = request.form['slug']
     app.logger.info('attempting to destroy instance %s/%s on behalf of'
                     '%s.' % (g.project.id, slug, session['email']))
-    result = g.project.destroy_instance(slug)
+    g.project.destroy_instance(slug)
     flash('The instance <strong>%s</strong> has been scheduled for '
           'destruction, and will be removed shortly.' % escape(slug))
     return redirect('/%s/' % g.project.id)

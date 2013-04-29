@@ -23,6 +23,14 @@ def fake_verify(assertion, origin):
 
 browserid.verify = fake_verify
 
+@fleeting.app.route('/csrf')
+def generate_csrf():
+    return fleeting.app.jinja_env.globals['csrf_token']()
+
+def postdata(**kwargs):
+    kwargs.update({'_csrf_token': 'csrf!'})
+    return kwargs
+
 class AppTests(unittest.TestCase):
     def setUp(self):
         self.app = fleeting.app.test_client()
@@ -34,20 +42,17 @@ class AppTests(unittest.TestCase):
     def test_login_and_logout_work(self):
         with fleeting.app.test_client() as c:
             # Set the CSRF token.
-            c.get('/')
+            c.get('/csrf')
             self.assertTrue('email' not in session)
 
             # Login.
-            rv = c.post('/login', data=dict(
-                assertion='foo@bar.org',
-                _csrf_token='csrf!'
-            ))
+            rv = c.post('/login', data=postdata(assertion='foo@bar.org'))
             self.assertEqual(rv.status, '200 OK')
             self.assertEqual(rv.data, 'foo@bar.org')
             self.assertEqual(session['email'], 'foo@bar.org')
 
             # Logout.
-            rv = c.post('/logout', data=dict(_csrf_token='csrf!'))
+            rv = c.post('/logout', data=postdata())
             self.assertEqual(rv.status, '200 OK')
             self.assertEqual(rv.data, 'logged out')
             self.assertTrue('email' not in session)
@@ -69,6 +74,11 @@ class AppTests(unittest.TestCase):
         rv = self.app.post('/update')
         self.assertEqual(rv.status, '200 OK')
         self.assertEqual('update complete', rv.data)
+
+    def test_project_destroy_instance_requires_login(self):
+        self.app.get('/csrf') # Set CSRF token.
+        rv = self.app.post('/openbadges/destroy', data=postdata())
+        self.assertEqual(rv.status, '401 UNAUTHORIZED')
 
     @mock.patch('fleeting.Project')
     @mock.patch('fleeting.Thread')
