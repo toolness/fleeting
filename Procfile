@@ -1,1 +1,1 @@
-web: gunicorn fleeting:app
+web: gunicorn fleeting.production:app

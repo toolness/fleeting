@@ -11,7 +11,6 @@ from .csrf import enable_csrf, csrf_exempt
 from .project import Project, get_project_map
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY')
 
 enable_csrf(app)
 
@@ -95,6 +94,7 @@ app.register_blueprint(project_bp)
 @app.route('/login', methods=['POST'])
 def login():
     origin = "%(PREFERRED_URL_SCHEME)s://%(SERVER_NAME)s" % (app.config)
+    app.logger.info('processing assertion with origin %s' % origin)
     data = browserid.verify(request.form['assertion'], origin)
     session['email'] = data['email']
     return data['email']
