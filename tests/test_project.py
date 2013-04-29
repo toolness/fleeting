@@ -65,10 +65,11 @@ class ProjectTests(unittest.TestCase):
         asc.return_value.get_all_groups.assert_called_once_with(
             names=[u'fleeting_autoscale_openbadges_sluggy']
         )
+        asc.return_value.get_all_launch_configurations.assert_called_once_with(
+            names=[u'fleeting_launchconfig_openbadges_sluggy']
+        )
         ag[0].delete.assert_called_once_with()
         lc[0].delete.assert_called_once_with()
-
-        pass
 
     @mock.patch('boto.connect_ec2')
     def test_project_get_instances_works(self, connect_ec2):
