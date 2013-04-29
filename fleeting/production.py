@@ -1,6 +1,6 @@
 import os
 
-from . import app
+from . import app, utils
 
 REQUIRED_KEYS = [
     'SECRET_KEY',
@@ -12,9 +12,7 @@ REQUIRED_KEYS = [
 ]
 
 def init():
-    for key in REQUIRED_KEYS:
-        if not key in os.environ:
-            raise Exception('environment variable %s is not defined' % key)
+    utils.ensure_env_vars(REQUIRED_KEYS)
 
     app.config.update(
         SECRET_KEY=os.environ['SECRET_KEY'],
