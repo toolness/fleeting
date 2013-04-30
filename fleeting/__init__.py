@@ -129,7 +129,8 @@ def update():
         app.logger.info('subscribed at %s.' % info['SubscribeURL'])
         return 'subscribed'
     msg = json.loads(info['Message'])
-    if 'AutoScalingGroupName' in msg:
+    if ('AutoScalingGroupName' in msg and
+        msg.get('Event') == 'autoscaling:EC2_INSTANCE_TERMINATE'):
         groupname = msg['AutoScalingGroupName']
         for name in get_project_map():
             project = Project(name)
