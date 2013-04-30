@@ -3,6 +3,7 @@ import json
 from StringIO import StringIO
 
 import mock
+from boto.exception import BotoServerError
 
 from fleeting import project
 
@@ -36,10 +37,20 @@ def create_mock_autoscale_group(asc, instance_id=None, **kwargs):
     if ag:
         return ag[0]
 
+def create_mock_launch_config(asc):
+    lc = mock.MagicMock()
+    asc.return_value.get_all_launch_configurations.return_value = [lc]
+    return lc
+
 def create_mock_http_response(http, status):
     res = mock.MagicMock(status=status)
     http.return_value.request.return_value = (res, '')
     return res
+
+def create_server_error(code):
+    err = BotoServerError('', '', '')
+    err.error_code = code
+    return err
 
 class ProjectTests(unittest.TestCase):
     def setUp(self):
@@ -78,6 +89,58 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(r, 'INVALID_GIT_INFO')
         does_url_404.assert_called_once_with(
             'https://github.com/uzer/openbadges/tree/branchu'
+        )
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    def test_destroy_instance_shuts_down_instances(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instance_id='k', min_size=1)
+        ag.delete.side_effect = create_server_error('ResourceInUse')
+        self.assertEqual(proj.destroy_instance('ded'), 'SHUTDOWN_IN_PROGRESS')
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    def test_destroy_instance_catches_misc_autoscale_errors(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instance_id='k', min_size=1)
+        ag.delete.side_effect = create_server_error('Oopsie')
+        self.assertEqual(proj.destroy_instance('ded'), 'ERROR:Oopsie')
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    def test_destroy_instance_catches_misc_launch_config_errors(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instance_id='k', min_size=1)
+        lc = create_mock_launch_config(asc)
+        lc.delete.side_effect = create_server_error('Ack')
+        self.assertEqual(proj.destroy_instance('ded'), 'ERROR:Ack')
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    def test_destroy_instance_returns_not_found(self, asc):
+        proj = project.Project('openbadges')
+        ascrv = asc.return_value
+
+        ascrv.get_all_groups.return_value = []
+        ascrv.get_all_launch_configurations.return_value = []
+
+        self.assertEqual(proj.destroy_instance('ded'), 'NOT_FOUND')
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    def test_destroy_instance_returns_done(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instance_id='k', min_size=1)
+        lc = create_mock_launch_config(asc)
+
+        self.assertEqual(proj.destroy_instance('buk'), 'DONE')
+
+        ag.delete.assert_called_once_with()
+        lc.delete.assert_called_once_with()
+
+        ascrv = asc.return_value
+
+        ascrv.get_all_groups.assert_called_once_with(
+            names=['fleeting_autoscale_openbadges_buk']
+        )
+        ascrv.get_all_launch_configurations.assert_called_once_with(
+            names=['fleeting_launchconfig_openbadges_buk']
         )
 
     @mock.patch('fleeting.project.AutoScaleConnection')
@@ -201,9 +264,8 @@ class ProjectTests(unittest.TestCase):
 
         create_mock_instance(ec2)
         ag = create_mock_autoscale_group(asc, min_size=0, instances=[])
-        lc = [mock.MagicMock()]
-        lc[0].delete.side_effect = Exception()
-        asc.return_value.get_all_launch_configurations.return_value = lc
+        lc = create_mock_launch_config(asc)
+        lc.delete.side_effect = Exception()
 
         deleted, errors = proj.cleanup_instances()
         self.assertEqual(deleted, 1)
@@ -221,7 +283,7 @@ class ProjectTests(unittest.TestCase):
             names=[u'fleeting_launchconfig_openbadges_sluggy']
         )
         ag.delete.assert_called_once_with()
-        lc[0].delete.assert_called_once_with()
+        lc.delete.assert_called_once_with()
 
     @mock.patch('boto.connect_ec2')
     def test_project_get_instances_works(self, connect_ec2):
