@@ -108,6 +108,16 @@ def logout():
         del session['email']
     return 'logged out'
 
+def delayed(func, seconds):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        app.logger.info('waiting %d seconds to execute %s' % (seconds,
+                                                              func.__name__))
+        time.sleep(seconds)
+        wrapper.wrapped(*args, **kwargs)
+    wrapper.wrapped = func
+    return wrapper
+
 @csrf_exempt
 @app.route('/update', methods=['POST'])
 def update():
@@ -116,6 +126,7 @@ def update():
         http = httplib2.Http(timeout=3,
                              disable_ssl_certificate_validation=True)
         res, content = http.request(info['SubscribeURL'])
+        app.logger.info('subscribed at %s.' % info['SubscribeURL'])
         return 'subscribed'
     msg = json.loads(info['Message'])
     if 'AutoScalingGroupName' in msg:
@@ -123,11 +134,9 @@ def update():
         for name in get_project_map():
             project = Project(name)
             if groupname.startswith(project.autoscale_group_name_prefix):
-                app.logger.info('cleaning up project %s' % project.id)
-                deleted, errors = project.cleanup_instances()
-                app.logger.info('%d deleted, %d errors in %s' % (
-                    deleted, errors, project.id
-                ))
+                app.logger.info('scheduling cleanup for %s' % name)
+                Thread(target=delayed(project.cleanup_instances, 15),
+                       kwargs=dict(logger=app.logger)).run()
     return 'updated'
 
 @app.route('/')

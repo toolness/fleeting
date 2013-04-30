@@ -2,6 +2,7 @@ import os
 import re
 import json
 import datetime
+import logging
 
 import boto
 from boto.ec2.autoscale import LaunchConfiguration
@@ -68,7 +69,8 @@ class Project(object):
             github_branch
         )
 
-    def cleanup_instances(self):
+    def cleanup_instances(self, logger=logging):
+        logger.info('cleaning up project %s' % self.id)
         s = {'deleted': 0, 'errors': 0}
         ec2 = connect_ec2()
         conn = connect_ec2_autoscale()
@@ -94,6 +96,9 @@ class Project(object):
             lc = conn.get_all_launch_configurations(names=[lc_name])
             if lc:
                 try_deleting(lc[0])
+        logger.info('%d deleted, %d errors in %s' % (
+            s['deleted'], s['errors'], self.id
+        ))
         return (s['deleted'], s['errors'])
 
     def get_instances(self):
