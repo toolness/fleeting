@@ -38,6 +38,15 @@ def postdata(**kwargs):
     kwargs.update({'_csrf_token': 'csrf!'})
     return kwargs
 
+def load_message(filename):
+    msg = open(filename, 'r')
+    headers = rfc822.Message(msg)
+    body = msg.read()
+    header_dict = {}
+    for name in headers:
+        header_dict[name] = headers.get(name)
+    return header_dict, body
+
 class AppTests(unittest.TestCase):
     def setUp(self):
         self.app = fleeting.app.test_client()
@@ -86,16 +95,31 @@ class AppTests(unittest.TestCase):
         rv = self.app.post('/openbadges/destroy', data=postdata())
         self.assertEqual(rv.status, '401 UNAUTHORIZED')
 
+    def test_update_works_with_termination_notification(self):
+        Project = fleeting.Project
+        openbadges = Project('openbadges')
+        openbadges.cleanup_instances = mock.MagicMock()
+        openbadges.cleanup_instances.return_value = (2, 0)
+
+        def FakeProject(name):
+            if name == 'openbadges':
+                return openbadges
+            proj = Project(name)
+            proj.cleanup_instances = lambda: IShouldNotBeCalled()
+            return proj
+
+        with mock.patch('fleeting.Project', FakeProject):
+            headers, body = load_message(path('termination.txt'))
+            rv = self.app.post('/update', headers=headers, data=body)
+            self.assertEqual(rv.status, '200 OK')
+            self.assertEqual('updated', rv.data)
+            openbadges.cleanup_instances.assert_called_once_with()
+
     @mock.patch('httplib2.Http')
     def test_update_works_with_subscription_confirmation(self, http):
-        msg = open(path('subscription-confirmation.txt'), 'r')
-        headers = rfc822.Message(msg)
-        body = msg.read()
-        header_dict = {}
-        for name in headers:
-            header_dict[name] = headers.get(name)
+        headers, body = load_message(path('subscription-confirmation.txt'))
         create_mock_http_response(http, status=200)
-        rv = self.app.post('/update', headers=header_dict, data=body)
+        rv = self.app.post('/update', headers=headers, data=body)
         self.assertEqual(rv.status, '200 OK')
         self.assertEqual('subscribed', rv.data)
         http.assert_called_once_with(disable_ssl_certificate_validation=True,

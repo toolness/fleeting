@@ -46,7 +46,7 @@ class Project(object):
         self.meta = {}
         self.tag_name = 'fleeting:%s' % project_id
         self.ready_tag_name = '%s:ready' % self.tag_name
-
+        self.autoscale_group_name_prefix = 'fleeting_autoscale_%s' % self.id
         for line in self.script_template.splitlines():
             match = re.search(r'fleeting-meta:([a-z0-9\-]+)\s*=(.*)', line)
             if match:
@@ -56,7 +56,7 @@ class Project(object):
         return 'fleeting_launchconfig_%s_%s' % (self.id, slug)
 
     def _get_autoscale_group_name(self, slug):
-        return 'fleeting_autoscale_%s_%s' % (self.id, slug)
+        return '%s_%s' % (self.autoscale_group_name_prefix, slug)
 
     def _get_instance_ready_url(self, hostname):
         return self.meta['ready-url'].replace('localhost', hostname)

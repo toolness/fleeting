@@ -116,7 +116,19 @@ def update():
         http = httplib2.Http(timeout=3,
                              disable_ssl_certificate_validation=True)
         res, content = http.request(info['SubscribeURL'])
-    return 'subscribed'
+        return 'subscribed'
+    msg = json.loads(info['Message'])
+    if 'AutoScalingGroupName' in msg:
+        groupname = msg['AutoScalingGroupName']
+        for name in get_project_map():
+            project = Project(name)
+            if groupname.startswith(project.autoscale_group_name_prefix):
+                app.logger.info('cleaning up project %s' % project.id)
+                deleted, errors = project.cleanup_instances()
+                app.logger.info('%d deleted, %d errors in %s' % (
+                    deleted, errors, project.id
+                ))
+    return 'updated'
 
 @app.route('/')
 def index():
