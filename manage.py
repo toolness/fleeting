@@ -4,6 +4,16 @@ import subprocess
 
 from fleeting import app, Project
 
+def import_env():
+    if os.path.exists('.env'):
+        for line in open('.env'):
+            if '=' not in line or line.strip().startswith('#'):
+                continue
+            var, value = line.split('=', 1)
+            var = var.strip()
+            value = value.strip()
+            os.environ[var] = value
+
 def cmd_runserver(args):
     "Run development server."
 
@@ -100,6 +110,8 @@ def cmd_project(parser):
     status.set_defaults(func=cmd_status)
 
 def main():
+    import_env()
+    
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
