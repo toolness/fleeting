@@ -112,7 +112,7 @@ the string `fleeting-meta:`. The following variables should be declared:
 
 * **name** is the human-readable name of the project.
 * **repo** is the github repository where the canonical project is
-  stored, in *user*/*repo* format.
+  stored, in `user/repo` format.
 * **image-id** is the EC2 [AMI][] to use when deploying branches of
   the project.
 * **instance-type** is the EC2 [instance type][] to use when deploying
