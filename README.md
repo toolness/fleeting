@@ -67,6 +67,13 @@ These are the environment variables used by the app.
 * **SERVER_SCHEME** is the protocol used to access Fleeting. It defaults
   to `http`, but you can set it to `https` if needed.
 
+* **AWS_NOTIFY_TOPIC** is the SNS Topic ARN that will be published to
+  whenever Amazon finishes terminating an instance. The `/update` endpoint
+  of the Fleeting server can be manually subscribed to this topic, which
+  will allow it to properly clean up resources that are no longer needed
+  after an instance is terminated. This variable is optional, but
+  recommended.
+
 ## Deployment
 
 The server was designed to run on Heroku with no backend storage. It should
@@ -81,7 +88,7 @@ directory and modifying it as needed.
 
 ## Limitations
 
-There are lots of limitations right now.
+There are a number of limitations right now.
 
 Currently, Fleeting instances auto-shutdown after 24 hours, and there's
 no easy way to change it.
