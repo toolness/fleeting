@@ -29,6 +29,14 @@ def connect_ec2_autoscale():
         _ec2_autoscale_conn = AutoScaleConnection()
     return _ec2_autoscale_conn
 
+def does_url_404(url):
+    http = httplib2.Http(timeout=3,
+                         disable_ssl_certificate_validation=True)
+    res, content = http.request(url, method='HEAD')
+    if res.status == 404:
+        return True
+    return False
+
 class Project(object):
     def __init__(self, project_id):
         pmap = get_project_map()
@@ -178,11 +186,7 @@ class Project(object):
     def create_instance(self, slug, git_user, git_branch, key_name,
                         security_groups, notify_topic=None,
                         lifetime=DEFAULT_LIFETIME):
-        github_url = self._get_github_url(git_user, git_branch)
-        http = httplib2.Http(timeout=3,
-                             disable_ssl_certificate_validation=True)
-        res, content = http.request(github_url, method='HEAD')
-        if res.status == 404:
+        if does_url_404(self._get_github_url(git_user, git_branch)):
             return 'INVALID_GIT_INFO'
 
         conn = connect_ec2_autoscale()

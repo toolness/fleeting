@@ -36,6 +36,11 @@ def create_mock_autoscale_group(asc, instance_id=None, **kwargs):
     if ag:
         return ag[0]
 
+def create_mock_http_response(http, status):
+    res = mock.MagicMock(status=status)
+    http.return_value.request.return_value = (res, '')
+    return res
+
 class ProjectTests(unittest.TestCase):
     def setUp(self):
         project._ec2_conn = None
@@ -54,6 +59,65 @@ class ProjectTests(unittest.TestCase):
         proj = project.Project('openbadges')
         url = proj._get_instance_ready_url('boop.org')
         self.assertEqual(url, 'http://boop.org:8888/')
+
+    @mock.patch('httplib2.Http')
+    def test_does_url_404_returns_true(self, http):
+        create_mock_http_response(http, status=404)
+        self.assertEqual(project.does_url_404('http://foo.org/'), True)
+
+    @mock.patch('httplib2.Http')
+    def test_does_url_404_returns_false(self, http):
+        create_mock_http_response(http, status=200)
+        self.assertEqual(project.does_url_404('http://foo.org/'), False)
+
+    @mock.patch('fleeting.project.does_url_404')
+    def test_create_instance_returns_on_bad_github_info(self, does_url_404):
+        does_url_404.return_value = True
+        proj = project.Project('openbadges')
+        r = proj.create_instance('z', 'uzer', 'branchu', 'key', ['default'])
+        self.assertEqual(r, 'INVALID_GIT_INFO')
+        does_url_404.assert_called_once_with(
+            'https://github.com/uzer/openbadges/tree/branchu'
+        )
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    @mock.patch('fleeting.project.does_url_404', lambda x: False)
+    def test_create_instance_returns_when_instance_exists(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instance_id='q', min_size=1)
+        r = proj.create_instance('z', 'uzer', 'branchu', 'key', ['default'])
+        self.assertEqual(r, 'INSTANCE_ALREADY_EXISTS')
+        asc.return_value.get_all_groups.assert_called_once_with(
+            names=['fleeting_autoscale_openbadges_z']
+        )
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    @mock.patch('fleeting.project.does_url_404', lambda x: False)
+    def test_create_instance_works(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instances=[], min_size=0)
+        with mock.patch.object(proj, 'cleanup_instances') as ci:
+            r = proj.create_instance('z', 'uzer', 'branchu', 'key',
+                                     security_groups=['defaultr'],
+                                     notify_topic='notifytopik')
+            self.assertEqual(r, 'DONE')
+            ci.assert_called_once_with()
+            ascrv = asc.return_value
+
+            lc = ascrv.create_launch_configuration.call_args[0][0]
+            self.assertEqual(lc.name, 'fleeting_launchconfig_openbadges_z')
+            self.assertEqual(lc.key_name, 'key')
+            self.assertEqual(lc.security_groups, ['defaultr'])
+            self.assertTrue('uzer' in lc.user_data)
+            self.assertTrue('branchu' in lc.user_data)
+
+            # TODO: Ensure autoscale group tag is ok
+
+            ag = ascrv.create_auto_scaling_group.call_args[0][0]
+            self.assertEqual(ag.name, 'fleeting_autoscale_openbadges_z')
+
+            # TODO: Ensure conn.create_scheduled_group_action() is ok
+            # TODO: Ensure conn.put_notification_configuration() is ok
 
     @mock.patch('fleeting.project.AutoScaleConnection')
     def test_get_instance_status_returns_not_found(self, asc):
@@ -117,16 +181,14 @@ class ProjectTests(unittest.TestCase):
     @mock.patch('httplib2.Http')
     def test_ping_ready_url_handles_bad_http_status(self, http):
         inst = mock.MagicMock(state='running', public_dns_name='u.org')
-        http.return_value.request.return_value = (mock.MagicMock(status=500),
-                                                  '')
+        create_mock_http_response(http, status=500)
         self.assertEqual(project.Project('openbadges')._ping_ready_url(inst),
                          ('INSTANCE:running', 'status 500'))
 
     @mock.patch('httplib2.Http')
     def test_ping_ready_url_handles_good_http_status(self, http):
         inst = mock.MagicMock(state='running', public_dns_name='u.org')
-        http.return_value.request.return_value = (mock.MagicMock(status=200),
-                                                  '')
+        create_mock_http_response(http, status=200)
         self.assertEqual(project.Project('openbadges')._ping_ready_url(inst),
                          ('READY', 'http://u.org:8888/'))
         inst.add_tag.assert_called_once_with('fleeting:openbadges:ready',
