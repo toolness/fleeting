@@ -1,9 +1,11 @@
 import os
 import time
+import json
 from threading import Thread
 from functools import wraps
 
 import browserid
+import httplib2
 from flask import Flask, Blueprint, abort, g, render_template, request, \
                   session, flash, redirect, escape
 from .csrf import enable_csrf, csrf_exempt
@@ -109,8 +111,12 @@ def logout():
 @csrf_exempt
 @app.route('/update', methods=['POST'])
 def update():
-    # TODO: Implement this.
-    return 'update complete'
+    info = json.loads(request.data)
+    if 'SubscribeURL' in info:
+        http = httplib2.Http(timeout=3,
+                             disable_ssl_certificate_validation=True)
+        res, content = http.request(info['SubscribeURL'])
+    return 'subscribed'
 
 @app.route('/')
 def index():

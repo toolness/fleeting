@@ -1,0 +1,20 @@
+X-Amz-Sns-Topic-Arn: arn:aws:sns:us-east-1:761457661301:testing-yo
+X-Amz-Sns-Subscription-Arn: arn:aws:sns:us-east-1:761457661301:testing-yo:ea102926-e0c9-41ef-bbe9-261dbe976c88
+X-Amz-Sns-Signature: vIrvXcKjEnmJAgVTNd47o/KPvjc6gOrLRcuX3UN2SU00m/SeZ5poc08QN2ePreRep0Y9C2hdp7eumkkSomS/tsSwVaSRxFsWD5iXtg8j1R7kFnaR/WdvaYNmWvVNQzukxfxyUsMrHgZBn8vU+tRGv+YqlA9r7y7hzPMr6OCuV0g=
+X-Amz-Sns-Message-Type: SubscriptionConfirmation
+X-Amz-Sns-Message-Id: 937626aa-1ce5-41d9-8f1b-05612a8465e4
+User-Agent: Amazon Simple Notification Service Agent
+Content-Type: text/plain; charset=UTF-8
+
+{
+  "Type" : "SubscriptionConfirmation",
+  "MessageId" : "937626aa-1ce5-41d9-8f1b-05612a8465e4",
+  "Token" : "2336412f37fb687f5d51e6e241d164b14a5cd29cc637764e550cde65c1a9e3c834cb048bb67688c25b799a7afda49cb668c9ea3425530c7e2e0c62a0336d7146fc6e7bf2d272fa4bf60eac176c8b1bcdba7a6473aca14ee0f62f861fcd69fbb0fc04c68da291c3467b179e77691f8dfc",
+  "TopicArn" : "arn:aws:sns:us-east-1:761457661301:testing-yo",
+  "Message" : "You have chosen to subscribe to the topic arn:aws:sns:us-east-1:761457661301:testing-yo.\nTo confirm the subscription, visit the SubscribeURL included in this message.",
+  "SubscribeURL" : "https://sns.us-east-1.amazonaws.com/?Action=ConfirmSubscription&TopicArn=arn:aws:sns:us-east-1:761457661301:testing-yo&Token=2336412f37fb687f5d51e6e241d164b14a5cd29cc637764e550cde65c1a9e3c834cb048bb67688c25b799a7afda49cb668c9ea3425530c7e2e0c62a0336d7146fc6e7bf2d272fa4bf60eac176c8b1bcdba7a6473aca14ee0f62f861fcd69fbb0fc04c68da291c3467b179e77691f8dfc",
+  "Timestamp" : "2013-04-30T11:30:16.777Z",
+  "SignatureVersion" : "1",
+  "Signature" : "RoeMBUAQFUL3Q0WRI9Ktd9TbNC7/xv+NtjnWRIR8DwmA2/vpv16iAgk+WwpLcWQ3CksHwisIg8qyMePiqhBgZ9KL9Biso/VqGcsiBTgzZyP9genwuOObQEGoNB0patbEGkbnmfzkxugAVXUxl7sND5IOW1rN/g1ATU0ia/NJZHI=",
+  "SigningCertURL" : "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-f3ecfb7224c7233fe7bb5f59f96de52f.pem"
+}

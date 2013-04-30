@@ -1,3 +1,6 @@
+import os
+import rfc822
+import json
 import unittest
 
 import browserid
@@ -6,6 +9,10 @@ import mock
 
 import fleeting
 import fleeting.csrf
+from .test_project import create_mock_http_response
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+path = lambda *x: os.path.join(ROOT, *x)
 
 fleeting.app.config.update(
     DEBUG=True,
@@ -74,15 +81,28 @@ class AppTests(unittest.TestCase):
         self.assertEqual(rv.status, '200 OK')
         self.assertTrue('openbadges' in rv.data)
 
-    def test_update_works(self):
-        rv = self.app.post('/update')
-        self.assertEqual(rv.status, '200 OK')
-        self.assertEqual('update complete', rv.data)
-
     def test_project_destroy_instance_requires_login(self):
         self.app.get('/csrf') # Set CSRF token.
         rv = self.app.post('/openbadges/destroy', data=postdata())
         self.assertEqual(rv.status, '401 UNAUTHORIZED')
+
+    @mock.patch('httplib2.Http')
+    def test_update_works_with_subscription_confirmation(self, http):
+        msg = open(path('subscription-confirmation.txt'), 'r')
+        headers = rfc822.Message(msg)
+        body = msg.read()
+        header_dict = {}
+        for name in headers:
+            header_dict[name] = headers.get(name)
+        create_mock_http_response(http, status=200)
+        rv = self.app.post('/update', headers=header_dict, data=body)
+        self.assertEqual(rv.status, '200 OK')
+        self.assertEqual('subscribed', rv.data)
+        http.assert_called_once_with(disable_ssl_certificate_validation=True,
+                                     timeout=3)
+        http.return_value.request.assert_called_once_with(
+            json.loads(body)['SubscribeURL']
+        )
 
     @mock.patch('fleeting.Project')
     @mock.patch('fleeting.flash')
