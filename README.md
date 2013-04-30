@@ -86,6 +86,52 @@ name of the file without the extension comprises the project [slug][]. The
 easiest way to add a new project is by copying an existing file in that
 directory and modifying it as needed.
 
+Each file is actually a [Jinja][] template for an executable shell
+script. The script also contains special metadata embedded in comments,
+which Fleeting uses to determine parameters of the deployment.
+
+### Jinja Context Variables
+
+The following Jinja context variables are defined when a project script is
+being generated for a deployment:
+
+* **GIT_BRANCH** is the git branch name being deployed.
+* **GIT_USER** is the github user whose repository is being deployed.
+
+Here's an example of the context variables in use:
+
+```
+git clone --recursive -b {{GIT_BRANCH}} \
+  git://github.com/{{GIT_USER}}/butter.git
+```
+
+### Project Metadata
+
+Project metadata should be embedded in comments and always begins with
+the string `fleeting-meta:`. The following variables should be declared:
+
+* **name** is the human-readable name of the project.
+* **repo** is the github repository where the canonical project is
+  stored, in *user*/*repo* format.
+* **image-id** is the EC2 [AMI][] to use when deploying branches of
+  the project.
+* **instance-type** is the EC2 [instance type][] to use when deploying
+  branches of the project.
+* **ready-url** is the URL that returns a 200 OK when the deployment is
+  ready to be used. Typically, this is the front page of a website. The
+  text `localhost` in this string is automatically replaced with the
+  domain name that the branch has been deployed at.
+
+Here's an example of this metadata being defined:
+
+```
+# fleeting-meta:name          = Popcorn Maker
+# fleeting-meta:repo          = mozilla/butter
+# fleeting-meta:image-id      = ami-2bb7d442
+# fleeting-meta:instance-type = t1.micro
+# fleeting-meta:ready-url     = http://localhost:8888/
+```
+
 ## Limitations
 
 There are a number of limitations right now.
@@ -105,3 +151,6 @@ any logic that whitelists email addresses or anything.
   [access]: http://docs.aws.amazon.com/fws/1.1/GettingStartedGuide/index.html?AWSCredentials.html
   [slug]: http://en.wikipedia.org/wiki/Clean_URL#Slug
   [Persona]: http://persona.org/
+  [Jinja]: http://jinja.pocoo.org/
+  [AMI]: https://aws.amazon.com/amis/
+  [instance type]: http://aws.amazon.com/ec2/instance-types/
