@@ -107,6 +107,25 @@ class Project(object):
             instances.append(info)
         return instances
 
+    def _ping_ready_url(self, inst):
+        state = 'INSTANCE:%s' % inst.state
+        info = None
+
+        if inst.state == 'running' and inst.public_dns_name:
+            url = self._get_instance_ready_url(inst.public_dns_name)
+            http = httplib2.Http(timeout=3)
+            try:
+                res, content = http.request(url)
+                if res.status == 200:
+                    state = 'READY'
+                    info = url
+                    inst.add_tag(self.ready_tag_name, url)
+                else:
+                    raise Exception('status %d' % res.status)
+            except Exception, e:
+                info = str(e)
+        return (state, info)
+
     def get_instance_status(self, slug):
         conn = connect_ec2_autoscale()
         ag_name = self._get_autoscale_group_name(slug)
@@ -125,23 +144,7 @@ class Project(object):
         if self.ready_tag_name in inst.tags:
             return ('READY', inst.tags[self.ready_tag_name])
 
-        state = 'INSTANCE:%s' % inst.state
-        info = None
-
-        if inst.state == 'running' and inst.public_dns_name:
-            url = self._get_instance_ready_url(inst.public_dns_name)
-            http = httplib2.Http(timeout=3)
-            try:
-                res, content = http.request(url)
-                if res.status == 200:
-                    state = 'READY'
-                    info = url
-                    inst.add_tag(self.ready_tag_name, url)
-                else:
-                    raise Exception('status %d' % res.status)
-            except Exception, e:
-                info = str(e)
-        return (state, info)
+        return self._ping_ready_url(inst)
 
     def destroy_instance(self, slug):
         found = False
