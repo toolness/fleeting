@@ -38,4 +38,5 @@ mysql -uroot -e "grant all on test_openbadges.* to 'badgemaker'@'localhost' \
   identified by 'secret'"
 
 npm install --production
+make start-issuer
 npm start
