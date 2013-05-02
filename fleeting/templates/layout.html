@@ -2,6 +2,7 @@
 <meta charset="utf-8">
 <meta name="csrf" content="{{ csrf_token() }}">
 <meta name="email" content="{{ email() }}">
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
 {% block head %}{% endblock %}
 <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
 <title>{% block title %}Fleeting{% endblock %}</title>
@@ -42,5 +43,5 @@
 </div>
 <script src="/static/vendor/jquery.min.js"></script>
 <script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="https://login.persona.org/include.js"></script>
 <script src="/static/login.js"></script>
-<script src="https://login.persona.org/include.js" async></script>
