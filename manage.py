@@ -74,9 +74,10 @@ def cmd_test(args):
     "Run test suite."
 
     if args.with_phantomjs:
-        print "Running browser-side tests with phantomjs..."
+        print "Running browser-side tests."
         os.chdir(path('fleeting'))
         with TestHttpServer(8127) as svr:
+            print "Test server ready, launching phantomjs."
             subprocess.check_call([
                 'phantomjs', path('tests', 'run-qunit.js'),
                 svr.resolve('/static/tests/index.html')
@@ -184,7 +185,7 @@ def main():
 
     shell = subparsers.add_parser('shell', help=cmd_shell.__doc__)
     shell.set_defaults(func=cmd_shell)
-    
+
     cmd_project(subparsers.add_parser('project', help=cmd_project.__doc__))
 
     args = parser.parse_args()
