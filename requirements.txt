@@ -2,4 +2,5 @@ Flask==0.9
 PyBrowserID==0.9.1
 boto==2.9.0
 httplib2==0.8
+redis==2.7.4
 gunicorn==0.17.4
