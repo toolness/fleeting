@@ -1,6 +1,6 @@
 import os
 
-from . import app, utils
+from . import app, utils, project, tempcache
 
 REQUIRED_KEYS = [
     'SECRET_KEY',
@@ -28,5 +28,13 @@ def init():
     app.logger.setLevel(logging.INFO)
 
     app.logger.info('Server name is %s.' % app.config['SERVER_NAME'])
+
+    redis_url = os.environ.get('REDIS_URL', os.environ.get('REDISTOGO_URL'))
+    if redis_url:
+        app.logger.info('Using redis at %s.' % redis_url)
+        project.cache = tempcache.RedisTempCache(
+            project.DEFAULT_CACHE_TTL,
+            url=redis_url
+        )
 
 init()

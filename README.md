@@ -74,6 +74,12 @@ These are the environment variables used by the app.
   after an instance is terminated. This variable is optional, but
   recommended.
 
+* **REDIS_URL** (or **REDISTOGO_URL**) is the url to a redis instance,
+  such as `redis://localhost:6379`. If provided, the app will use this
+  redis instance for temporary storage. Otherwise, the app will use an
+  in-process cache. If your server is pre-forking, or you're otherwise
+  scaling this app via the process model, you should use redis.
+
 ## Deployment
 
 The server was designed to run on Heroku with no backend storage. It should
