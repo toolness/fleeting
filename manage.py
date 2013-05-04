@@ -1,8 +1,48 @@
 import os
 import argparse
 import subprocess
+import SimpleHTTPServer
+import SocketServer
+import httplib2
+from urlparse import urljoin
+from threading import Thread
 
 from fleeting import app, Project
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+path = lambda *x: os.path.join(ROOT, *x)
+
+class TestHttpServer(object):
+    def __init__(self, port):
+        self.port = port
+
+    def resolve(self, path):
+        return urljoin('http://127.0.0.1:%d' % self.port, path)
+
+    def start_http_server(self):
+        SocketServer.TCPServer.allow_reuse_address = True
+        Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+        self.httpd = SocketServer.TCPServer(("127.0.0.1", self.port),
+                                            Handler)
+        self.httpd.serve_forever()
+
+    def __enter__(self):
+        self.thread = Thread(target=self.start_http_server)
+        self.thread.start()
+        http = httplib2.Http(timeout=1)
+        while True:
+            res = None
+            try:
+                res, content = http.request(self.resolve('/404'))
+            except Exception:
+                pass
+            if res and res.status == 404:
+                break
+        return self
+
+    def __exit__(self, *exception_info):
+        self.httpd.shutdown()
+        self.thread.join()
 
 def import_env():
     if os.path.exists('.env'):
@@ -26,6 +66,17 @@ def cmd_runserver(args):
 def cmd_test(args):
     "Run test suite."
 
+    if args.with_phantomjs:
+        print "Running browser-side tests with phantomjs..."
+        os.chdir(path('fleeting'))
+        with TestHttpServer(8127) as svr:
+            subprocess.check_call([
+                'phantomjs', path('tests', 'run-qunit.js'),
+                svr.resolve('/static/tests/index.html')
+            ])
+        print "Browser-side tests successful."
+
+    os.chdir(path())
     errno = subprocess.call([
         'coverage', 'run',
         '--source', 'fleeting',
@@ -119,6 +170,9 @@ def main():
     rs.set_defaults(func=cmd_runserver)
 
     test = subparsers.add_parser('test', help=cmd_test.__doc__)
+    test.add_argument('--with-phantomjs', default=False,
+                      action='store_true',
+                      help='run browser-side test suite via phantomjs')
     test.set_defaults(func=cmd_test)
 
     cmd_project(subparsers.add_parser('project', help=cmd_project.__doc__))
