@@ -1,4 +1,5 @@
 import os
+import code
 import argparse
 import subprocess
 import SimpleHTTPServer
@@ -54,6 +55,11 @@ def import_env():
             var = var.strip()
             value = value.strip()
             os.environ[var] = value
+
+def cmd_shell(args):
+    "Run interactive python shell."
+
+    code.interact()
 
 def cmd_runserver(args):
     "Run development server."
@@ -176,6 +182,9 @@ def main():
                       help='run browser-side test suite via phantomjs')
     test.set_defaults(func=cmd_test)
 
+    shell = subparsers.add_parser('shell', help=cmd_shell.__doc__)
+    shell.set_defaults(func=cmd_shell)
+    
     cmd_project(subparsers.add_parser('project', help=cmd_project.__doc__))
 
     args = parser.parse_args()
