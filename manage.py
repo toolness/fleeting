@@ -1,4 +1,22 @@
 import os
+import sys
+import pkg_resources
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+path = lambda *x: os.path.join(ROOT, *x)
+
+def maybe_activate_virtualenv():
+    if (os.path.exists(path('venv')) and 
+        not sys.executable.startswith(path('venv'))):
+        requirements = open(path('requirements.txt'), 'r')
+        try:
+            pkg_resources.require(requirements)
+        except pkg_resources.DistributionNotFound:
+            filename = path('venv', 'bin', 'activate_this.py')
+            execfile(filename, dict(__file__=filename))
+
+maybe_activate_virtualenv()
+
 import code
 import argparse
 import subprocess
@@ -9,9 +27,6 @@ from urlparse import urljoin
 from threading import Thread
 
 from fleeting import app, Project
-
-ROOT = os.path.dirname(os.path.abspath(__file__))
-path = lambda *x: os.path.join(ROOT, *x)
 
 class TestHttpServer(object):
     def __init__(self, port):
