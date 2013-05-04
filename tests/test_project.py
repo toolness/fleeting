@@ -6,6 +6,7 @@ import mock
 from boto.exception import BotoServerError
 
 from fleeting import project
+from fleeting.tempcache import DictTempCache
 
 def create_mock_instance(ec2, ready_tag=True):
     tags = {
@@ -56,6 +57,7 @@ class ProjectTests(unittest.TestCase):
     def setUp(self):
         project._ec2_conn = None
         project._ec2_autoscale_conn = None
+        project.cache = DictTempCache(project.DEFAULT_CACHE_TTL)
 
     def test_get_project_map_works(self):
         pmap = project.get_project_map()
@@ -124,6 +126,17 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(proj.destroy_instance('ded'), 'NOT_FOUND')
 
     @mock.patch('fleeting.project.AutoScaleConnection')
+    def test_destroy_instance_adds_cache_entry(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instance_id='k', min_size=1)
+        lc = create_mock_launch_config(asc)
+        proj.destroy_instance('buk')
+        self.assertEqual(project.cache.find('fleeting:openbadges:buk'), [{
+            'slug': 'buk',
+            'state': 'terminated'
+        }])
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
     def test_destroy_instance_returns_done(self, asc):
         proj = project.Project('openbadges')
         ag = create_mock_autoscale_group(asc, instance_id='k', min_size=1)
@@ -153,6 +166,23 @@ class ProjectTests(unittest.TestCase):
         asc.return_value.get_all_groups.assert_called_once_with(
             names=['fleeting_autoscale_openbadges_z']
         )
+
+    @mock.patch('fleeting.project.AutoScaleConnection')
+    @mock.patch('fleeting.project.does_url_404', lambda x: False)
+    def test_create_instance_adds_cache_entry(self, asc):
+        proj = project.Project('openbadges')
+        ag = create_mock_autoscale_group(asc, instances=[], min_size=0)
+        with mock.patch.object(proj, 'cleanup_instances') as ci:
+            proj.create_instance('z', 'uzer', 'branchu', 'key',
+                                 security_groups=['default'])
+            self.assertEqual(
+                project.cache.find('fleeting:openbadges:z'),
+                [dict(slug='z',
+                      state='pending',
+                      lifetime=86400.0,
+                      git_user='uzer',
+                      git_branch='branchu')]
+            )
 
     @mock.patch('fleeting.project.AutoScaleConnection')
     @mock.patch('fleeting.project.does_url_404', lambda x: False)
@@ -298,3 +328,32 @@ class ProjectTests(unittest.TestCase):
             'git_branch_url': 'https://github.com/toolness/openbadges/tree/experimentz',
             'launch_time': '2013-04-29T11:53:42.000Z'
         }])
+
+    @mock.patch('boto.connect_ec2')
+    def test_project_get_instances_adds_cache_entries(self, connect_ec2):
+        proj = project.Project('openbadges')
+        project.cache['fleeting:openbadges:foo'] = dict(
+            slug='foo',
+            state='pending',
+            lifetime=86400.0,
+            git_user='uzer',
+            git_branch='branchu'
+        )
+        self.assertEqual(proj.get_instances(), [{
+            'state': 'pending',
+            'git_user': 'uzer',
+            'git_branch': 'branchu',
+            'lifetime': 86400.0,
+            'slug': 'foo',
+            'git_branch_url': 'https://github.com/uzer/openbadges/tree/branchu'
+        }])
+
+    @mock.patch('boto.connect_ec2')
+    def test_project_get_instances_removes_cache_entries(self, connect_ec2):
+        create_mock_instance(connect_ec2)
+        proj = project.Project('openbadges')
+        project.cache['fleeting:openbadges:sluggy'] = dict(
+            slug='sluggy',
+            state='terminated'
+        )
+        self.assertEqual(proj.get_instances(), [])

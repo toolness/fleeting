@@ -12,9 +12,12 @@ import httplib2
 from jinja2 import Template
 
 from .utils import path
+from .tempcache import DictTempCache
 
 DEFAULT_LIFETIME = datetime.timedelta(hours=24)
+DEFAULT_CACHE_TTL = 3600
 
+cache = DictTempCache(DEFAULT_CACHE_TTL)
 _ec2_conn = None
 _ec2_autoscale_conn = None
 
@@ -52,6 +55,9 @@ class Project(object):
             match = re.search(r'fleeting-meta:([a-z0-9\-]+)\s*=(.*)', line)
             if match:
                 self.meta[match.group(1)] = match.group(2).strip()
+
+    def _set_cache_entry(self, slug, value):
+        cache['%s:%s' % (self.tag_name, slug)] = value
 
     def _get_launch_config_name(self, slug):
         return 'fleeting_launchconfig_%s_%s' % (self.id, slug)
@@ -107,18 +113,26 @@ class Project(object):
             'tag-key': self.tag_name,
             'instance-state-name': ['pending', 'running']
         })
-        instances = []
+        instances = {}
         for res in reservations:
             inst = res.instances[0]
             info = json.loads(inst.tags[self.tag_name])
             info['launch_time'] = inst.launch_time
             info['state'] = inst.state
-            info['git_branch_url'] = self._get_github_url(info['git_user'],
-                                                          info['git_branch'])
             if self.ready_tag_name in inst.tags:
                 info['url'] = inst.tags[self.ready_tag_name]
-            instances.append(info)
-        return instances
+            instances[info['slug']] = info
+        for item in cache.find('%s:' % self.tag_name):
+            if (item['state'] == 'pending' and
+                item['slug'] not in instances):
+                instances[item['slug']] = item
+            elif (item['state'] == 'terminated' and
+                  item['slug'] in instances):
+                del instances[item['slug']]
+        for info in instances.values():
+            info['git_branch_url'] = self._get_github_url(info['git_user'],
+                                                          info['git_branch'])
+        return instances.values()
 
     def _ping_ready_url(self, inst):
         state = 'INSTANCE:%s' % inst.state
@@ -160,6 +174,10 @@ class Project(object):
         return self._ping_ready_url(inst)
 
     def destroy_instance(self, slug):
+        self._set_cache_entry(slug, dict(
+            slug=slug,
+            state='terminated'
+        ))
         found = False
 
         conn = connect_ec2_autoscale()
@@ -216,16 +234,17 @@ class Project(object):
         )
         conn.create_launch_configuration(lc)
 
+        info = dict(
+            slug=slug,
+            git_user=git_user,
+            git_branch=git_branch,
+            lifetime=lifetime.total_seconds()
+        )
         ag_shutdown_name = '%s_shutdown-action' % ag_name
         ag_tag = boto.ec2.autoscale.tag.Tag(
             conn,
             self.tag_name,
-            json.dumps(dict(
-                slug=slug,
-                git_user=git_user,
-                git_branch=git_branch,
-                lifetime=lifetime.total_seconds()
-            )),
+            json.dumps(info),
             propagate_at_launch=True,
             resource_id=ag_name
         )
@@ -258,6 +277,8 @@ class Project(object):
                 notify_topic,
                 ['autoscaling:EC2_INSTANCE_TERMINATE']
             )
+        info['state'] = 'pending'
+        self._set_cache_entry(slug, info)
         return 'DONE'
 
 def get_project_map():
