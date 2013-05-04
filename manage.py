@@ -22,6 +22,7 @@ class TestHttpServer(object):
     def start_http_server(self):
         SocketServer.TCPServer.allow_reuse_address = True
         Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+        Handler.log_message = lambda *x: None
         self.httpd = SocketServer.TCPServer(("127.0.0.1", self.port),
                                             Handler)
         self.httpd.serve_forever()
