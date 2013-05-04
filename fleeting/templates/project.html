@@ -37,7 +37,13 @@
         </td>
         <td>{{ inst.git_user }}</td>
         <td><a href="{{ inst.git_branch_url }}">{{ inst.git_branch }}</a></td>
-        <td>{{ inst.state }}</td>
+        <td>
+          {% if inst.state == 'running' and not inst.url %}
+            configuring
+          {% else %}
+            {{ inst.state }}
+          {% endif %}
+        </td>
         <td>
           {% if inst.state == 'running' and email() %}
           <form method="POST" action="destroy">
