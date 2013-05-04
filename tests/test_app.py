@@ -2,6 +2,7 @@ import os
 import rfc822
 import json
 import unittest
+import logging
 
 import browserid
 from flask import session
@@ -13,6 +14,8 @@ from .test_project import create_mock_http_response
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 path = lambda *x: os.path.join(ROOT, *x)
+
+fleeting.app.logger.setLevel(logging.WARN)
 
 fleeting.app.config.update(
     DEBUG=True,
