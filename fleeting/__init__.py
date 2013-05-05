@@ -82,16 +82,23 @@ def destroy_instance():
           'info')
     return redirect('/%s/' % g.project.id)
 
-@project_bp.route('/')
-def project_index():
+def render_project_template(name):
     instances = g.project.get_instances()
     for inst in instances:
         if inst['state'] == 'running' and 'url' not in inst:
             Thread(target=g.project.get_instance_status,
                    kwargs={'slug': inst['slug']}).run()
-    return render_template('project.html',
+    return render_template(name,
                            project=g.project,
                            instances=instances)
+
+@project_bp.route('/list')
+def project_list():
+    return render_project_template('project-list.html')
+
+@project_bp.route('/')
+def project_index():
+    return render_project_template('project.html')
 
 app.register_blueprint(project_bp)
 

@@ -186,6 +186,13 @@ class AppTests(unittest.TestCase):
         self.assertTrue('unknown' in args[0])
         self.assertEqual(args[1], 'error')
 
+    @mock.patch('fleeting.render_project_template')
+    def test_project_list_works(self, render_project_template):
+        render_project_template.return_value = 'hi'
+        rv = self.app.get('/openbadges/list')
+        render_project_template.assert_called_once_with('project-list.html')
+        self.assertEqual(rv.status, '200 OK')
+
     @mock.patch('fleeting.Project')
     @mock.patch('fleeting.Thread')
     def test_project_index_works(self, Thread, Project):

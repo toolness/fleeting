@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block head %}
-<meta http-equiv="refresh" content="30">
 <meta name="repository" content="{{ project.meta.repo }}">
 {% endblock %}
 {% block title %}Fleeting - {{ project.meta.name }} Instances{% endblock %}
@@ -19,48 +18,9 @@
     </form>
   </div>
   {% endif %}
-  {% if instances %}
-    <table class="table">
-      <tr>
-        <th>Name</th>
-        <th>User</th>
-        <th>Branch</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-      {% for inst in instances %}
-      <tr {% if not inst.url %}class="muted"{% endif %}>
-        <td>
-          {% if inst.url %}
-          <a href="{{ inst.url }}">{{ inst.slug }}</a>
-          {% else %}
-          {{ inst.slug }}
-          {% endif %}
-        </td>
-        <td>{{ inst.git_user }}</td>
-        <td><a href="{{ inst.git_branch_url }}">{{ inst.git_branch }}</a></td>
-        <td>
-          {% if inst.state == 'running' and not inst.url %}
-            configuring
-          {% else %}
-            {{ inst.state }}
-          {% endif %}
-        </td>
-        <td>
-          {% if inst.state == 'running' and email() %}
-          <form method="POST" action="destroy">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="slug" value="{{ inst.slug }}">
-            <button type="submit" class="btn btn-mini"><i class="icon-trash"></i> Destroy</button>
-          </form>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </table>
-  {% else %}
-    <p>No instances are currently running.</p>
-  {% endif %}
+  <div id="js-project-list">
+    {% include "project-list.html" %}
+  </div>
 {% endblock %}
 {% block scripts %}
 <script src="/static/vendor/lscache.js"></script>

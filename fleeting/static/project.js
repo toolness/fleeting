@@ -1,5 +1,6 @@
 var Project = (function() {
-  var EXPIRY = 10;  // In minutes.
+  var EXPIRY = 10;               // In minutes.
+  var REFRESH_INTERVAL = 30000;  // In milliseconds.
 
   var repoHome = $('meta[name="repository"]').attr('content');
   var repoName = repoHome && repoHome.split('/')[1];
@@ -66,6 +67,9 @@ var Project = (function() {
         });
       }
     });
+    setInterval(function() {
+      $("#js-project-list").load('list');
+    }, REFRESH_INTERVAL);
   }
 
   return {
