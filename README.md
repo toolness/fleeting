@@ -65,7 +65,13 @@ These are the environment variables used by the app.
   `localhost:5000` or `enigmatic-beyond-4959.herokuapp.com`.
 
 * **SERVER_SCHEME** is the protocol used to access Fleeting. It defaults
-  to `http`, but you can set it to `https` if needed.
+  to `http`, but you can set it to `https` if needed. The server will
+  automatically redirect any accesses via the other scheme to this
+  preferred scheme.
+
+* **ORIGINATING_SCHEME_HEADER** is the header that contains the
+  value of the actual scheme (http or https) being used to access the
+  server, if any. For instance, Heroku uses `X-Forwarded-Proto`.
 
 * **AWS_NOTIFY_TOPIC** is the SNS Topic ARN that will be published to
   whenever Amazon finishes terminating an instance. The `/update` endpoint
@@ -82,8 +88,8 @@ These are the environment variables used by the app.
 
 ## Deployment
 
-The server was designed to run on Heroku with no backend storage. It should
-be runnable other places, too.
+The server was designed as a [12-factor app]() to run on Heroku.
+Redis is needed if you have more than one process running the app.
 
 ## Adding More Projects
 
@@ -160,3 +166,4 @@ any logic that whitelists email addresses or anything.
   [Jinja]: http://jinja.pocoo.org/
   [AMI]: https://aws.amazon.com/amis/
   [instance type]: http://aws.amazon.com/ec2/instance-types/
+  [12-factor app]: http://www.12factor.net/
