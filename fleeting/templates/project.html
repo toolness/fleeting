@@ -11,8 +11,8 @@
     <h3>Deploy An Instance</h3>
     <p>Fleeting instances will only exist for 24 hours, after which they will be destroyed.</p>
     <form method="POST" action="create" class="form-inline">
-      <input type="text" name="user" class="input-small js-github-user" placeholder="Github User" required>
-      <input type="text" name="branch" class="input-small js-github-branch" placeholder="Branch" required>
+      <input type="text" name="user" class="input-medium js-github-user" placeholder="Github User" required>
+      <input type="text" name="branch" class="input-medium js-github-branch" placeholder="Branch" required>
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn">Deploy</button>
     </form>
