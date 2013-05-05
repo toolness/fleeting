@@ -88,7 +88,7 @@ These are the environment variables used by the app.
 
 ## Deployment
 
-The server was designed as a [12-factor app]() to run on Heroku.
+The server was designed as a [12-factor app][] to run on Heroku.
 Redis is needed if you have more than one process running the app.
 
 ## Adding More Projects
