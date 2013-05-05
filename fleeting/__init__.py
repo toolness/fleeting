@@ -28,7 +28,8 @@ def requires_login(f):
 
 @app.after_request
 def add_csp_headers(response):
-    policy = "default-src 'self' https://login.persona.org"
+    policy = "default-src 'self' https://login.persona.org " \
+             "https://api.github.com"
     response.headers['Content-Security-Policy'] = policy
     response.headers['X-Content-Security-Policy'] = policy
     return response

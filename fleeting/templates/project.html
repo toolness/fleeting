@@ -1,17 +1,19 @@
 {% extends "layout.html" %}
 {% block head %}
 <meta http-equiv="refresh" content="30">
+<meta name="repository" content="{{ project.meta.repo }}">
 {% endblock %}
 {% block title %}Fleeting - {{ project.meta.name }} Instances{% endblock %}
 {% block content %}
   <h1>{{ project.meta.name }} Instances</h1>
+  <p>This project's home is <a href="https://github.com/{{ project.meta.repo }}">{{ project.meta.repo }}</a>.</p>
   {% if email() %}
   <div class="well">
     <h3>Deploy An Instance</h3>
     <p>Fleeting instances will only exist for 24 hours, after which they will be destroyed.</p>
     <form method="POST" action="create" class="form-inline">
-      <input type="text" name="user" class="input-small" placeholder="Github User" required>
-      <input type="text" name="branch" class="input-small" placeholder="Branch" required>
+      <input type="text" name="user" class="input-small js-github-user" placeholder="Github User" required>
+      <input type="text" name="branch" class="input-small js-github-branch" placeholder="Branch" required>
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn">Deploy</button>
     </form>
@@ -59,4 +61,8 @@
   {% else %}
     <p>No instances are currently running.</p>
   {% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="/static/vendor/lscache.js"></script>
+<script src="/static/project.js"></script>
 {% endblock %}
