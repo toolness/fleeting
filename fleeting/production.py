@@ -1,4 +1,5 @@
 import os
+from urllib import quote
 
 from . import app, utils, project, tempcache
 
