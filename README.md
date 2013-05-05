@@ -155,6 +155,8 @@ Anyone can spawn a Fleeting instance; they simply need to log in through
 [Persona][]. Their email address is logged, but there isn't currently
 any logic that whitelists email addresses or anything.
 
+For a complete list, see the [issue tracker][].
+
   [Flask]: http://flask.pocoo.org/
   [aws]: http://aws.amazon.com/
   [virtualenv]: http://www.virtualenv.org/
@@ -167,3 +169,4 @@ any logic that whitelists email addresses or anything.
   [AMI]: https://aws.amazon.com/amis/
   [instance type]: http://aws.amazon.com/ec2/instance-types/
   [12-factor app]: http://www.12factor.net/
+  [issue tracker]: https://github.com/toolness/fleeting/issues
