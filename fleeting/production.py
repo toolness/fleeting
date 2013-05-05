@@ -11,6 +11,33 @@ REQUIRED_KEYS = [
     'AWS_SECRET_ACCESS_KEY'
 ]
 
+def force_preferred_url_scheme(wsgi_app):
+    def wrapper(environ, start_response):
+        SITE_SCHEME = app.config['PREFERRED_URL_SCHEME']
+
+        # For some reason 'secure_scheme_headers' in gunicorn config
+        # is failing us, so we'll do it manually here.
+        osh = os.environ.get('ORIGINATING_SCHEME_HEADER')
+        if osh:
+            osh = 'HTTP_%s' % osh.replace('-', '_').upper()
+            if environ.get(osh) == 'https':
+                environ['wsgi.url_scheme'] = 'https'
+
+        # If the SITE_URL is explicitly defined, then we're going to
+        # force a redirect to the proper protocol (http or https)
+        # if necessary.
+        if environ['wsgi.url_scheme'] != SITE_SCHEME:
+            url = '%s://%s' % (SITE_SCHEME, app.config['SERVER_NAME'])
+            # http://www.python.org/dev/peps/pep-0333/#url-reconstruction
+            url += quote(environ.get('SCRIPT_NAME', ''))
+            url += quote(environ.get('PATH_INFO', ''))
+            if environ.get('QUERY_STRING'):
+                url += '?' + environ['QUERY_STRING']
+            start_response("302 Found", [("Location", url)])
+            return ["redirect to %s" % SITE_SCHEME]
+        return wsgi_app(environ, start_response)
+    return wrapper
+
 def init():
     utils.ensure_env_vars(REQUIRED_KEYS)
 
@@ -36,5 +63,7 @@ def init():
             project.DEFAULT_CACHE_TTL,
             url=redis_url
         )
+    app.wsgi_app = force_preferred_url_scheme(app.wsgi_app)
+
 
 init()
