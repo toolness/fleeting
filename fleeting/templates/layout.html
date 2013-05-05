@@ -4,7 +4,7 @@
 <meta name="email" content="{{ email() }}">
 <meta http-equiv="X-UA-Compatible" content="IE=Edge">
 {% block head %}{% endblock %}
-<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap{{ dot_min() }}.css">
 <title>{% block title %}Fleeting{% endblock %}</title>
 <div class="navbar navbar-static-top navbar-inverse">
   <div class="navbar-inner">
@@ -42,8 +42,8 @@
   {% endwith %}
   {% block content %}{% endblock %}
 </div>
-<script src="/static/vendor/jquery.min.js"></script>
-<script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+<script src="/static/vendor/jquery{{ dot_min() }}.js"></script>
+<script src="/static/vendor/bootstrap/js/bootstrap{{ dot_min() }}.js"></script>
 <script src="https://login.persona.org/include.js"></script>
 <script src="/static/login.js"></script>
 {% block scripts %}{% endblock %}

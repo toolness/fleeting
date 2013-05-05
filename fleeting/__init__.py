@@ -16,7 +16,13 @@ app = Flask(__name__)
 
 enable_csrf(app)
 
+def dot_min():
+    if app.config['DEBUG']:
+        return ''
+    return '.min'
+
 app.jinja_env.globals['email'] = lambda: session.get('email', '')
+app.jinja_env.globals['dot_min'] = dot_min
 
 def requires_login(f):
     @wraps(f)

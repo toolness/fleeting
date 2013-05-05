@@ -88,6 +88,16 @@ class AppTests(unittest.TestCase):
             for header in headers:
                 self.assertTrue(rv.headers[header].startswith(prefix))
 
+    @mock.patch.dict('fleeting.app.config', dict(DEBUG=False))
+    def test_dot_min_works_when_debug_is_false(self):
+        s = fleeting.app.jinja_env.from_string('f{{dot_min()}}.js').render()
+        self.assertEqual(s, 'f.min.js')
+
+    @mock.patch.dict('fleeting.app.config', dict(DEBUG=True))
+    def test_dot_min_works_when_debug_is_true(self):
+        s = fleeting.app.jinja_env.from_string('f{{dot_min()}}.js').render()
+        self.assertEqual(s, 'f.js')
+
     def test_index_works(self):
         rv = self.app.get('/')
         self.assertEqual(rv.status, '200 OK')
