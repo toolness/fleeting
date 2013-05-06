@@ -1,7 +1,4 @@
 {% extends "layout.html" %}
-{% block head %}
-<meta name="repository" content="{{ project.meta.repo }}">
-{% endblock %}
 {% block title %}Fleeting - {{ project.meta.name }} Instances{% endblock %}
 {% block content %}
   <h1>{{ project.meta.name }} Instances</h1>
@@ -11,14 +8,14 @@
     <h3>Deploy An Instance</h3>
     <p>Fleeting instances will only exist for 24 hours, after which they will be destroyed.</p>
     <form method="POST" action="create" class="form-inline">
-      <input type="text" name="user" class="input-medium js-github-user" placeholder="Github User" required>
-      <input type="text" name="branch" class="input-medium js-github-branch" placeholder="Branch" required>
+      <input type="text" name="user" class="input-medium" placeholder="Github User" data-github-fork="{{ project.meta.repo }}" required>
+      <input type="text" name="branch" class="input-medium" data-github-branch placeholder="Branch" required>
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn">Deploy</button>
     </form>
   </div>
   {% endif %}
-  <div id="js-project-list">
+  <div data-refresh-url="list" data-refresh-seconds="30">
     {% include "project-list.html" %}
   </div>
 {% endblock %}

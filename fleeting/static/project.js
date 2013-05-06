@@ -1,10 +1,11 @@
+"use strict";
+
 var Project = (function() {
   var EXPIRY = 10;               // In minutes.
-  var REFRESH_INTERVAL = 30000;  // In milliseconds.
 
-  var repoHome = $('meta[name="repository"]').attr('content');
-  var repoName = repoHome && repoHome.split('/')[1];
   var typeaheadMatcher = $.fn.typeahead.Constructor.prototype.matcher;
+  var ghFork = '[data-github-fork]';
+  var ghBranch = '[data-github-branch]';
   var getNextGithubPagePath = function(linkHeader) {
     var NEXT_REGEXP = /<https:\/\/api.github.com\/([^>]*)>;\srel="next"/;
     var match = linkHeader.match(NEXT_REGEXP);
@@ -36,8 +37,16 @@ var Project = (function() {
     });
   };
 
-  if (repoHome) {
-    $(".js-github-user").attr("autocomplete", "off").typeahead({
+  $(document).on('focus.github.data-api', ghFork, function(e) {
+    var $this = $(this);
+
+    if ($this.data('typeahead')) return;
+
+    var repoHome = $(this).attr("data-github-fork");
+    var repoName = repoHome.split('/')[1];
+
+    $this.attr("data-github-repo-name", repoName);
+    $this.attr("autocomplete", "off").typeahead({
       matcher: typeaheadMatcher,
       source: function(query, process) {
         getGithubJSON('/repos/' + repoHome + '/forks', function(forks) {
@@ -45,16 +54,27 @@ var Project = (function() {
             return fork.owner.login;
           }));
         });
-      }
+      }      
     });
-    $(".js-github-branch").attr("autocomplete", "off").typeahead({
+  });
+
+  $(document).on('focus.github.data-api', ghBranch, function(e) {
+    var $this = $(this);
+
+    if ($this.data('typeahead')) return;
+
+    var fork = $this.prevAll(ghFork).first().data("typeahead");
+
+    if (!fork) return;
+
+    var repoName = fork.$element.attr("data-github-repo-name");
+
+    $this.attr("autocomplete", "off").typeahead({
       matcher: typeaheadMatcher,
       source: function(query, process) {
-        var $el = this.$element;
-        var user = $el.prevAll(".js-github-user").first().data("typeahead");
-        var username = user.$element.val();
+        var username = fork.$element.val();
 
-        user.source(username, function(matches) {
+        fork.source(username, function(matches) {
           if (matches.indexOf(username) != -1) {
             var path = '/repos/' + username + '/' + repoName + '/branches';
             getGithubJSON(path, function(branches) {
@@ -67,10 +87,17 @@ var Project = (function() {
         });
       }
     });
-    setInterval(function() {
-      $("#js-project-list").load('list');
-    }, REFRESH_INTERVAL);
-  }
+  });
+
+  $(window).on('load', function() {
+    $('[data-refresh-url]').each(function() {
+      var $this = $(this);
+      var url = $this.attr('data-refresh-url');
+      var interval = parseInt($this.attr('data-refresh-seconds')) * 1000;
+
+      setInterval(function() { $this.load(url); }, interval);
+    });
+  });
 
   return {
     _testing: {
