@@ -9,9 +9,14 @@
 export DEBIAN_FRONTEND=noninteractive
 export PUBLIC_HOSTNAME=`ec2metadata --public-hostname`
 
+# Needed by node-gyp. For more info, see:
+# https://github.com/TooTallNate/node-gyp/issues/21#issuecomment-17494117
+export HOME=/home/ubuntu
+
 # Taken from:
 # https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager
 
+apt-get -q -y update
 apt-get -q -y install python-software-properties python g++ make
 add-apt-repository -y ppa:chris-lea/node.js
 apt-get -q -y update
