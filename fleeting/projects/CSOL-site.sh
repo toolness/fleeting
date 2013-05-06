@@ -9,6 +9,10 @@
 export DEBIAN_FRONTEND=noninteractive
 export COOKIE_SECRET="TESTING"
 
+# Needed by node-gyp. For more info, see:
+# https://github.com/TooTallNate/node-gyp/issues/21#issuecomment-17494117
+export HOME=/home/ubuntu
+
 # Taken from:
 # https://github.com/joyent/node/wiki/Installing-Node.js-via-package-manager
 
