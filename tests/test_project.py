@@ -237,6 +237,44 @@ class ProjectTests(unittest.TestCase):
                          ('INSTANCE_DOES_NOT_EXIST', None))
 
     @mock.patch('boto.connect_ec2')
+    def test_get_running_instance_returns_instance(self, ec2):
+        proj = project.Project('openbadges')
+        inst = create_mock_instance(ec2)
+        self.assertEqual(proj._get_running_instance('sluggy'),
+                         inst)
+
+    def test_get_instance_log_returns_none(self):
+        proj = project.Project('openbadges')
+        with mock.patch.object(proj, '_get_running_instance') as get:
+            get.return_value = None
+            self.assertEqual(proj.get_instance_log('blah'), None)
+
+    def test_get_instance_log_returns_nonempty_str(self):
+        proj = project.Project('openbadges')
+        with mock.patch.object(proj, '_get_running_instance') as get:
+            inst = mock.MagicMock()
+            get.return_value = inst
+            inst.get_console_output.return_value.output = "LOL"
+            self.assertEqual(proj.get_instance_log('blah'), "LOL")
+            get.assert_called_once_with('blah')
+
+    def test_get_instance_log_returns_empty_str(self):
+        proj = project.Project('openbadges')
+        with mock.patch.object(proj, '_get_running_instance') as get:
+            inst = mock.MagicMock()
+            get.return_value = inst
+            inst.get_console_output.return_value.output = None
+            self.assertEqual(proj.get_instance_log('yo'), '')
+            get.assert_called_once_with('yo')
+
+    @mock.patch('boto.connect_ec2')
+    def test_get_running_instance_returns_none(self, ec2):
+        proj = project.Project('openbadges')
+        inst = create_mock_instance(ec2)
+        self.assertEqual(proj._get_running_instance('blop'),
+                         None)
+
+    @mock.patch('boto.connect_ec2')
     @mock.patch('fleeting.project.AutoScaleConnection')
     def test_get_instance_status_returns_ready_tag(self, asc, ec2):
         proj = project.Project('openbadges')
