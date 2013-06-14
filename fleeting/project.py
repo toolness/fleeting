@@ -153,6 +153,25 @@ class Project(object):
                 info = str(e)
         return (state, info)
 
+    def _get_running_instance(self, slug):
+        ec2 = connect_ec2()
+        reservations = ec2.get_all_instances(filters={
+            'tag-key': self.tag_name,
+            'instance-state-name': ['running']
+        })
+        instances = {}
+        for res in reservations:
+            inst = res.instances[0]
+            info = json.loads(inst.tags[self.tag_name])
+            if info['slug'] == slug:
+                return inst
+
+    def get_instance_log(self, slug):
+        inst = self._get_running_instance(slug)
+        if not inst:
+            return None
+        return inst.get_console_output().output or ""
+
     def get_instance_status(self, slug):
         conn = connect_ec2_autoscale()
         ag_name = self._get_autoscale_group_name(slug)

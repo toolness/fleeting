@@ -75,6 +75,15 @@ def create_instance():
         flash('An unknown error occurred. Sorry!', 'error')
     return redirect('/%s/' % g.project.id)
 
+@project_bp.route('/log')
+@requires_login
+def view_instance_log():
+    slug = request.args.get('slug')
+    log = g.project.get_instance_log(slug)
+    if log is None:
+        return "Unknown instance.", 404
+    return (log, 200, {'Content-Type': 'text/plain'})
+
 @project_bp.route('/destroy', methods=['POST'])
 @requires_login
 def destroy_instance():
