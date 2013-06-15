@@ -75,14 +75,22 @@ def create_instance():
         flash('An unknown error occurred. Sorry!', 'error')
     return redirect('/%s/' % g.project.id)
 
-@project_bp.route('/log')
-@requires_login
-def view_instance_log():
+def _get_log(method):
     slug = request.args.get('slug')
-    log = g.project.get_instance_log(slug)
+    log = method(slug)
     if log is None:
         return "Unknown instance.", 404
     return (log, 200, {'Content-Type': 'text/plain'})
+
+@project_bp.route('/log')
+@requires_login
+def view_instance_log():
+    return  _get_log(g.project.get_instance_log)
+
+@project_bp.route('/live-log')
+@requires_login
+def view_instance_authserver_log():
+    return  _get_log(g.project.get_instance_authserver_log)
 
 @project_bp.route('/destroy', methods=['POST'])
 @requires_login
