@@ -145,34 +145,31 @@ class AppTests(unittest.TestCase):
 
     @mock.patch('fleeting.Project')
     def test_log_returns_404(self, Project):
-        get = Project.return_value.get_instance_log
+        get = Project.return_value.get_instance
         get.return_value = None
         self.login('meh@goo.org')
-        rv = self.app.get('/openbadges/log?slug=foo')
+        rv = self.app.get('/openbadges/foo/log')
         get.assert_called_once_with('foo')
         self.assertEqual(rv.status, '404 NOT FOUND')
-        self.assertEqual(rv.data, 'Unknown instance.')
 
     @mock.patch('fleeting.Project')
     def test_log_returns_text(self, Project):
-        get = Project.return_value.get_instance_log
-        get.return_value = "BLARGH"
+        Project.return_value.get_instance_log.return_value = "BLARGH"
         self.login('meh@goo.org')
-        rv = self.app.get('/openbadges/log?slug=foo')
-        get.assert_called_once_with('foo')
+        rv = self.app.get('/openbadges/foo/log')
+        Project.return_value.get_instance.assert_called_once_with('foo')
         self.assertEqual(rv.status, '200 OK')
         self.assertEqual(rv.data, 'BLARGH')
         self.assertEqual(rv.headers['content-type'], 'text/plain')
 
     @mock.patch('fleeting.Project')
     def test_live_log_returns_text(self, Project):
-        get = Project.return_value.get_instance_authserver_log
-        get.return_value = "BLARGH"
+        Project.return_value.get_instance_authserver_log.return_value = "BL"
         self.login('meh@goo.org')
-        rv = self.app.get('/openbadges/live-log?slug=foo')
-        get.assert_called_once_with('foo')
+        rv = self.app.get('/openbadges/foo/live-log')
+        Project.return_value.get_instance.assert_called_once_with('foo')
         self.assertEqual(rv.status, '200 OK')
-        self.assertEqual(rv.data, 'BLARGH')
+        self.assertEqual(rv.data, 'BL')
         self.assertEqual(rv.headers['content-type'], 'text/plain')
 
     @mock.patch('fleeting.Project')

@@ -41,13 +41,25 @@ def add_csp_headers(response):
     return response
 
 project_bp = Blueprint('project', __name__, url_prefix='/<project>')
+instance_bp = Blueprint('instance', __name__,
+                        url_prefix='/<project>/<instance>')
 
-@project_bp.url_value_preprocessor
 def pull_project(endpoint, values):
     pname = values.pop('project', None)
     if pname not in get_project_map():
         abort(404)
     g.project = Project(pname)
+
+def pull_project_instance(endpoint, values):
+    pull_project(endpoint, values)
+    iname = values.pop('instance', None)
+    inst = g.project.get_instance(iname)
+    if inst is None:
+        abort(404)
+    g.project_instance = inst
+
+project_bp.url_value_preprocessor(pull_project)
+instance_bp.url_value_preprocessor(pull_project_instance)
 
 @project_bp.route('/create', methods=['POST'])
 @requires_login
@@ -75,22 +87,19 @@ def create_instance():
         flash('An unknown error occurred. Sorry!', 'error')
     return redirect('/%s/' % g.project.id)
 
-def _get_log(method):
-    slug = request.args.get('slug')
-    log = method(slug)
-    if log is None:
-        return "Unknown instance.", 404
-    return (log, 200, {'Content-Type': 'text/plain'})
-
-@project_bp.route('/log')
+@instance_bp.route('/log')
 @requires_login
 def view_instance_log():
-    return  _get_log(g.project.get_instance_log)
+    return (g.project.get_instance_log(g.project_instance), 200, {
+        'Content-Type': 'text/plain'
+    })
 
-@project_bp.route('/live-log')
+@instance_bp.route('/live-log')
 @requires_login
 def view_instance_authserver_log():
-    return  _get_log(g.project.get_instance_authserver_log)
+    return (g.project.get_instance_authserver_log(g.project_instance), 200, {
+        'Content-Type': 'text/plain'
+    })
 
 @project_bp.route('/destroy', methods=['POST'])
 @requires_login
@@ -124,6 +133,7 @@ def project_index():
     return render_project_template('project.html')
 
 app.register_blueprint(project_bp)
+app.register_blueprint(instance_bp)
 
 @app.route('/login', methods=['POST'])
 def login():

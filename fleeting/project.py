@@ -158,11 +158,11 @@ class Project(object):
                 info = str(e)
         return (state, info)
 
-    def _get_running_instance(self, slug):
+    def get_instance(self, slug):
         ec2 = connect_ec2()
         reservations = ec2.get_all_instances(filters={
             'tag-key': self.tag_name,
-            'instance-state-name': ['running']
+            'instance-state-name': ['pending', 'running']
         })
         instances = {}
         for res in reservations:
@@ -171,11 +171,8 @@ class Project(object):
             if info['slug'] == slug:
                 return inst
 
-    def get_instance_authserver_log(self, slug):
-        inst = self._get_running_instance(slug)
-        if not inst:
-            return None
-        if inst.public_dns_name:
+    def get_instance_authserver_log(self, inst):
+        if inst.state == 'running' and inst.public_dns_name:
             user, passwd = AUTHSERVER_CREDS.split(':')
             url = "http://%s:%d/%s" % (inst.public_dns_name,
                                        AUTHSERVER_PORT,
@@ -188,12 +185,9 @@ class Project(object):
                     return content
             except Exception, e:
                 pass
-            return ""
+        return ""
 
-    def get_instance_log(self, slug):
-        inst = self._get_running_instance(slug)
-        if not inst:
-            return None
+    def get_instance_log(self, inst):
         return inst.get_console_output().output or ""
 
     def get_instance_status(self, slug):
