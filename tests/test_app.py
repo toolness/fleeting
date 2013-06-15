@@ -165,6 +165,17 @@ class AppTests(unittest.TestCase):
         self.assertEqual(rv.headers['content-type'], 'text/plain')
 
     @mock.patch('fleeting.Project')
+    def test_live_log_returns_text(self, Project):
+        get = Project.return_value.get_instance_authserver_log
+        get.return_value = "BLARGH"
+        self.login('meh@goo.org')
+        rv = self.app.get('/openbadges/live-log?slug=foo')
+        get.assert_called_once_with('foo')
+        self.assertEqual(rv.status, '200 OK')
+        self.assertEqual(rv.data, 'BLARGH')
+        self.assertEqual(rv.headers['content-type'], 'text/plain')
+
+    @mock.patch('fleeting.Project')
     @mock.patch('fleeting.flash')
     def test_project_destroy_instance_works(self, flash, Project):
         Project.return_value.id = 'openbadges'

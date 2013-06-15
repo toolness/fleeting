@@ -117,6 +117,11 @@ def cmd_test(args):
 def cmd_project(parser):
     "Manage EC2 instances."
 
+    def cmd_userdata(args):
+        "Output user data script template using environment variables."
+
+        print args.project.render_user_data(**os.environ)
+
     def cmd_status(args):
         "Show status information about an instance."
 
@@ -182,6 +187,9 @@ def cmd_project(parser):
     status = subparsers.add_parser('status', help=cmd_status.__doc__)
     status.add_argument('slug', help='unique slug id to query')
     status.set_defaults(func=cmd_status)
+
+    userdata = subparsers.add_parser('userdata', help=cmd_userdata.__doc__)
+    userdata.set_defaults(func=cmd_userdata)
 
 def main():
     import_env()

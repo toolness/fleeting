@@ -43,9 +43,9 @@ def create_mock_launch_config(asc):
     asc.return_value.get_all_launch_configurations.return_value = [lc]
     return lc
 
-def create_mock_http_response(http, status):
+def create_mock_http_response(http, status, content=''):
     res = mock.MagicMock(status=status)
-    http.return_value.request.return_value = (res, '')
+    http.return_value.request.return_value = (res, content)
     return res
 
 def create_server_error(code):
@@ -242,6 +242,32 @@ class ProjectTests(unittest.TestCase):
         inst = create_mock_instance(ec2)
         self.assertEqual(proj._get_running_instance('sluggy'),
                          inst)
+
+    def test_get_instance_authserver_log_returns_none(self):
+        proj = project.Project('openbadges')
+        with mock.patch.object(proj, '_get_running_instance') as get:
+            get.return_value = None
+            self.assertEqual(proj.get_instance_authserver_log('boop'), None)
+
+    @mock.patch('httplib2.Http')
+    def test_get_instance_authserver_log_returns_nonempty_str(self, http):
+        proj = project.Project('openbadges')
+        create_mock_http_response(http, status=200, content='blah')
+        with mock.patch.object(proj, '_get_running_instance') as get:
+            get.return_value.public_dns_name = 'foo.org'
+            self.assertEqual(proj.get_instance_authserver_log('boop'), 'blah')
+
+            h = http.return_value
+            h.add_credentials.assert_called_once_with('fleeting', 'fleeting')
+            h.request.assert_called_once_with('http://foo.org:9312/log.txt')
+
+    @mock.patch('httplib2.Http')
+    def test_get_instance_authserver_log_returns_empty_str(self, http):
+        proj = project.Project('openbadges')
+        http.return_value.request.side_effect = Exception('funky socket err')
+        with mock.patch.object(proj, '_get_running_instance') as get:
+            get.return_value.public_dns_name = 'foo.org'
+            self.assertEqual(proj.get_instance_authserver_log('boop'), '')
 
     def test_get_instance_log_returns_none(self):
         proj = project.Project('openbadges')

@@ -14,6 +14,11 @@ from jinja2 import Template
 from .utils import path
 from .tempcache import DictTempCache
 
+AUTHSERVER_PORT = 9312
+AUTHSERVER_CREDS = "fleeting:fleeting"
+AUTHSERVER_LOGFILE = "log.txt"
+BOOTSTRAP_TEMPLATE = open(path('templates', 'bootstrap.sh')).read()
+
 DEFAULT_LIFETIME = datetime.timedelta(hours=24)
 DEFAULT_CACHE_TTL = 3600
 
@@ -166,6 +171,25 @@ class Project(object):
             if info['slug'] == slug:
                 return inst
 
+    def get_instance_authserver_log(self, slug):
+        inst = self._get_running_instance(slug)
+        if not inst:
+            return None
+        if inst.public_dns_name:
+            user, passwd = AUTHSERVER_CREDS.split(':')
+            url = "http://%s:%d/%s" % (inst.public_dns_name,
+                                       AUTHSERVER_PORT,
+                                       AUTHSERVER_LOGFILE)
+            http = httplib2.Http(timeout=5)
+            http.add_credentials(user, passwd)
+            try:
+                res, content = http.request(url)
+                if res.status == 200:
+                    return content
+            except Exception, e:
+                pass
+            return ""
+
     def get_instance_log(self, slug):
         inst = self._get_running_instance(slug)
         if not inst:
@@ -225,6 +249,12 @@ class Project(object):
             return 'DONE'
         return 'NOT_FOUND'
 
+    def render_user_data(self, **kwargs):
+        kwargs.update(dict(globals()))
+        sp = Template(self.script_template).render(**kwargs)
+        kwargs['STARTPROJECT_SCRIPT'] = sp
+        return Template(BOOTSTRAP_TEMPLATE).render(**kwargs)
+
     def create_instance(self, slug, git_user, git_branch, key_name,
                         security_groups, notify_topic=None,
                         lifetime=DEFAULT_LIFETIME):
@@ -246,7 +276,7 @@ class Project(object):
             key_name=key_name,
             instance_type=self.meta['instance-type'],
             security_groups=security_groups,
-            user_data=Template(self.script_template).render(
+            user_data=self.render_user_data(
                 GIT_USER=git_user,
                 GIT_BRANCH=git_branch
             )
